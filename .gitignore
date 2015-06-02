@@ -1,2 +1,4 @@
 .cabal-sandbox
+.ghci
+log/
 cabal.sandbox.config
