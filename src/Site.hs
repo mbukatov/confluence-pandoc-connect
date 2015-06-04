@@ -103,11 +103,14 @@ serveDescriptor = do
 handleCreateRequest :: Handler App App ()
 handleCreateRequest =
   method GET (render "file_form") <|>
-  method POST (render "storage_formatted_response")
+  method POST (convertFile "filename.md" "# headers lol\
+                                         \\n\
+                                         \\n\
+                                         \content!")
 
 convertFile :: String -> String -> Handler App App ()
 convertFile filename fileString = do
-  let errorOrReader = getReader filename
+  let errorOrReader = readerFromFilename filename
   either
     readFailed
     (\(StringReader readerF)-> do
@@ -120,6 +123,16 @@ convertFile filename fileString = do
     readFailed errorString = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS $ pack errorString
+
+readerFromFilename :: String -> Either String Reader
+readerFromFilename filename =
+  getReader $ case suffix of
+    "md" -> "markdown"
+    "tex" -> "latex"
+    "mw" -> "mediawiki"
+    _ -> suffix
+  where
+    suffix = drop 1 $ dropWhile ('.' /=) filename
 
 writeConfluenceStorageFormat :: Pandoc -> Handler App App ()
 writeConfluenceStorageFormat pandoc = do
