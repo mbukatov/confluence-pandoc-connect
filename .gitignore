@@ -2,3 +2,5 @@
 .ghci
 log/
 cabal.sandbox.config
+production/to-copy
+dist/
