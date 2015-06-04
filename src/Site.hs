@@ -10,6 +10,7 @@ module Site
 
 ------------------------------------------------------------------------------
 import           Control.Applicative
+import           Control.Monad
 import           Data.ByteString (ByteString)
 import           Data.Monoid
 import qualified Data.Text as T
@@ -59,6 +60,8 @@ handleNewUser = method GET handleForm <|> method POST handleFormSubmit
     handleForm = render "new_user"
     handleFormSubmit = registerUser "login" "password" >> redirect "/"
 
+heartbeatRequest :: Handler App App ()
+heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
 
 ------------------------------------------------------------------------------
 -- | The application's routes.
@@ -66,6 +69,7 @@ routes :: [(ByteString, Handler App App ())]
 routes = [ ("/login",    with auth handleLoginSubmit)
          , ("/logout",   with auth handleLogout)
          , ("/new_user", with auth handleNewUser)
+         , ("rest/heartbeat", heartbeatRequest)
          , ("",          serveDirectory "static")
          ]
 
