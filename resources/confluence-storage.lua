@@ -133,7 +133,7 @@ function Link(s, src, tit)
 end
 
 function Image(s, src, tit)
-  return "<ac:image><ri:url ri:value='" .. escape(src,true) "' /></ac:image>"
+  return "<ac:image><ri:url ri:value='" .. escape(src,true) .. "' /></ac:image>"
 end
 
 function Code(s, attr)
