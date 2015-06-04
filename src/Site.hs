@@ -115,9 +115,7 @@ convertFileFromFormData = do
   where
     uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
     maxFileSize = 100000000 -- 100 MB
-    formHandler :: [(PartInfo, Either PolicyViolationException FilePath)] -> Handler App App (Maybe (String, String))
     formHandler = foldl handlePart (return Nothing)
-    handlePart :: Handler App App (Maybe (String, String)) -> (PartInfo, Either PolicyViolationException FilePath) -> Handler App App (Maybe (String, String))
     handlePart acc (fileInfo, errorOrFilePath) = do
       prevResult <- acc
       if partFieldName fileInfo == "file-upload"
