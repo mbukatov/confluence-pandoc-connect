@@ -125,17 +125,15 @@ function SmallCaps(s)
 end
 
 function Strikeout(s)
-  return '<del>' .. s .. '</del>'
+  return '<span style="text-decoration: line-through;">' .. s .. '</span>'
 end
 
 function Link(s, src, tit)
-  return "<a href='" .. escape(src,true) .. "' title='" ..
-         escape(tit,true) .. "'>" .. s .. "</a>"
+  return "<a href='" .. escape(src,true) .. "'>" .. s .. "</a>"
 end
 
 function Image(s, src, tit)
-  return "<img src='" .. escape(src,true) .. "' title='" ..
-         escape(tit,true) .. "'/>"
+  return "<ac:image><ri:url ri:value='" .. escape(src,true) "' /></ac:image>"
 end
 
 function Code(s, attr)
@@ -189,7 +187,7 @@ function Header(lev, s, attr)
 end
 
 function BlockQuote(s)
-  return "<blockquote>\n" .. s .. "\n</blockquote>"
+  return "<blockquote><p>" .. s .. "</p></blockquote>"
 end
 
 function HorizontalRule()
