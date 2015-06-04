@@ -14,7 +14,7 @@
      </section>
  </body>
  <div style="display: none" id="storage-format-response">
-     <p> The response </p>
+   <storageFormatResponse/>
  </div>
  <script>
      var storageFormat = document.getElementById("storage-format-response").innerHTML;
@@ -25,7 +25,7 @@
         type: 'POST',
         data: {
             "type":"page",
-            "title":"My Test Page",
+            "title":"page title",
             "space":{"key":"TST"},
             "body":{"storage":{"value": storageFormat,"representation":"storage"}}
         },

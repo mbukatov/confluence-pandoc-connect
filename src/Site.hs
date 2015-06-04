@@ -123,6 +123,10 @@ convertFile filename fileString = do
 
 writeConfluenceStorageFormat :: Pandoc -> Handler App App ()
 writeConfluenceStorageFormat pandoc = do
+  writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
+  putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
+  heistLocal (I.bindString "storageFormatResponse" (T.pack writeResult)) $
+    render "storage_formatted_response"
   return ()
 
 ------------------------------------------------------------------------------
