@@ -63,6 +63,43 @@ handleNewUser = method GET handleForm <|> method POST handleFormSubmit
 heartbeatRequest :: Handler App App ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
 
+serveDescriptor :: Handler App App ()
+serveDescriptor = do
+  let descriptor = "{\
+\     \"name\": \"Confluence Pandoc Connect\",\
+\     \"description\": \"Atlassian Connect add-on\",\
+\     \"key\": \"io.atlassian.cpc\",\
+\     \"baseUrl\": \"http://localhost:8000\",\
+\     \"vendor\": {\
+\         \"name\": \"Atlassian\",\
+\         \"url\": \"http://www.atlassian.com\"\
+\     },\
+\     \"authentication\": {\
+\         \"type\": \"none\"\
+\     },\
+\     \"apiVersion\": 1,\
+\     \"modules\": {\
+\         \"webItems\": [\
+\             {\
+\                 \"url\": \"/start-create\",\
+\                 \"key\": \"pandoc-import\",\
+\                 \"location\": \"system.content.action\",\
+\                 \"name\": {\
+\                     \"value\": \"Import from file\"\
+\                 },\
+\                 \"target\": {\
+\                     \"type\": \"dialog\"\
+\                 }\
+\             }\
+\         ]\
+\     }\
+\ }"
+  putResponse $ setResponseCode 200 $ setContentType "application/json" emptyResponse
+  writeBS descriptor
+
+handleStartCreateSubmit :: Handler App App ()
+handleStartCreateSubmit = writeBS ""
+
 ------------------------------------------------------------------------------
 -- | The application's routes.
 routes :: [(ByteString, Handler App App ())]
@@ -71,6 +108,8 @@ routes = [ ("/login",    with auth handleLoginSubmit)
          , ("/new_user", with auth handleNewUser)
          , ("rest/heartbeat", heartbeatRequest)
          , ("",          serveDirectory "static")
+         , ("/atlassian-connect.json", serveDescriptor)
+         , ("/start-create", handleStartCreateSubmit)
          ]
 
 
