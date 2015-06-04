@@ -11,7 +11,9 @@ module Site
 ------------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Monad
+import           Control.Monad.IO.Class
 import           Data.ByteString (ByteString)
+import           Data.ByteString.Char8 (pack)
 import           Data.Monoid
 import qualified Data.Text as T
 import           Snap.Core
@@ -21,6 +23,7 @@ import           Snap.Snaplet.Auth.Backends.JsonFile
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.Session.Backends.CookieSession
 import           Snap.Util.FileServe
+import           Text.Pandoc
 import           Heist
 import qualified Heist.Interpreted as I
 ------------------------------------------------------------------------------
@@ -98,7 +101,29 @@ serveDescriptor = do
   writeBS descriptor
 
 handleCreateRequest :: Handler App App ()
-handleCreateRequest = render "file_form"
+handleCreateRequest =
+  method GET (render "file_form") <|>
+  method POST (putResponse $ setResponseCode 500 emptyResponse)
+
+convertFile :: String -> String -> Handler App App ()
+convertFile filename fileString = do
+  let errorOrReader = getReader filename
+  either
+    readFailed
+    (\(StringReader readerF)-> do
+      let read = readerF def
+      errorOrReadResult <- liftIO $ read fileString
+      either (readFailed . show) writeConfluenceStorageFormat errorOrReadResult
+    )
+    errorOrReader
+  where
+    readFailed errorString = do
+      putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
+      writeBS $ pack errorString
+
+writeConfluenceStorageFormat :: Pandoc -> Handler App App ()
+writeConfluenceStorageFormat pandoc = do
+  return ()
 
 ------------------------------------------------------------------------------
 -- | The application's routes.
