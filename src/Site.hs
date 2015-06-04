@@ -13,7 +13,8 @@ import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.ByteString (ByteString)
-import           Data.ByteString.Char8 (pack)
+import           Data.ByteString.Char8 (pack, unpack)
+import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text as T
 import           Snap.Core
@@ -23,6 +24,7 @@ import           Snap.Snaplet.Auth.Backends.JsonFile
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.Session.Backends.CookieSession
 import           Snap.Util.FileServe
+import           Snap.Util.FileUploads
 import           Text.Pandoc
 import           Heist
 import qualified Heist.Interpreted as I
@@ -103,10 +105,34 @@ serveDescriptor = do
 handleCreateRequest :: Handler App App ()
 handleCreateRequest =
   method GET (render "file_form") <|>
-  method POST (convertFile "filename.md" "# headers lol\
-                                         \\n\
-                                         \\n\
-                                         \content!")
+  method POST convertFileFromFormData
+
+convertFileFromFormData :: Handler App App ()
+convertFileFromFormData = do
+  maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler
+  maybePageTitle <- getParam "page-title"
+  maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
+  where
+    uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
+    maxFileSize = 100000000 -- 100 MB
+    formHandler :: [(PartInfo, Either PolicyViolationException FilePath)] -> Handler App App (Maybe (String, String))
+    formHandler = foldl handlePart (return Nothing)
+    handlePart :: Handler App App (Maybe (String, String)) -> (PartInfo, Either PolicyViolationException FilePath) -> Handler App App (Maybe (String, String))
+    handlePart acc (fileInfo, errorOrFilePath) = do
+      prevResult <- acc
+      if partFieldName fileInfo == "file-upload"
+        then
+            either
+              (\_ -> uploadFailed >> return Nothing)
+              (\filePath -> do
+                fileContent <- liftIO $ readFile filePath
+                return . Just $ (unpack . fromJust $ partFileName fileInfo, fileContent)
+              )
+              errorOrFilePath
+        else return Nothing
+    uploadFailed = do
+      putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
+      writeBS "File upload failed"
 
 convertFile :: String -> String -> Handler App App ()
 convertFile filename fileString = do
