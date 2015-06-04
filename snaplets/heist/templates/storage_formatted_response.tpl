@@ -16,8 +16,11 @@
  <div style="display: none" id="storage-format-response">
    <storageFormatResponse/>
  </div>
+ <div style="display: none" id="new-page-title"><newPageTitle/></div>
  <script>
      var storageFormat = document.getElementById("storage-format-response").innerHTML;
+     // TODO get a decoded string not HTML for the title
+     var newPageTitle = document.getElementById("new-page-title").textContent;
     // Display an alert box with a list of JIRA dashboards using the JIRA REST API.
     AP.require('request', function(request){
       request({
@@ -25,7 +28,7 @@
         type: 'POST',
         data: {
             "type":"page",
-            "title":"page title",
+            "title":newPageTitle,
             "space":{"key":"TST"},
             "body":{"storage":{"value": storageFormat,"representation":"storage"}}
         },

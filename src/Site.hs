@@ -17,6 +17,7 @@ import           Data.ByteString.Char8 (pack, unpack)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as E
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Auth
@@ -110,7 +111,6 @@ handleCreateRequest =
 convertFileFromFormData :: Handler App App ()
 convertFileFromFormData = do
   maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler
-  maybePageTitle <- getParam "page-title"
   maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
   where
     uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
@@ -160,10 +160,13 @@ readerFromFilename filename =
 
 writeConfluenceStorageFormat :: Pandoc -> Handler App App ()
 writeConfluenceStorageFormat pandoc = do
+  maybePageTitle <- getParam "page-title"
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  heistLocal (I.bindString "storageFormatResponse" (T.pack writeResult)) $
-    render "storage_formatted_response"
+  let splices = do
+        "newPageTitle" ##  E.decodeUtf8 $ fromJust maybePageTitle
+        "storageFormatResponse" ## T.pack writeResult
+  heistLocal (I.bindStrings splices) $ render "storage_formatted_response"
   return ()
 
 ------------------------------------------------------------------------------
