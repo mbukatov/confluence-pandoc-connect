@@ -10,7 +10,7 @@
              <div class="aui-page-header-main">
              </div>
          </div>
-        <form class="aui" enctype="multipart/form-data" action="/upload/image" method="post">
+        <form class="aui" enctype="multipart/form-data" action="/create" method="post">
             <div class="field-group">
                 <label for="title-input">Page Title</label>
                 <input class="text medium-field" type="text"
