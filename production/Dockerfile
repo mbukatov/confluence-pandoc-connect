@@ -22,4 +22,4 @@ WORKDIR /service
 ENV LANG en_US.UTF-8 # 
 
 # Setup the default command to run for the container.
-CMD ["/service/my-reminders", "--access-log=-", "--error-log=stderr", "--port=8080"]
+CMD ["/service/confluence-pandoc-connect", "--access-log=-", "--error-log=stderr", "--port=8080"]
