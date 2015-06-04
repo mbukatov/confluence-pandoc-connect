@@ -103,7 +103,7 @@ serveDescriptor = do
 handleCreateRequest :: Handler App App ()
 handleCreateRequest =
   method GET (render "file_form") <|>
-  method POST (putResponse $ setResponseCode 500 emptyResponse)
+  method POST (render "storage_formatted_response")
 
 convertFile :: String -> String -> Handler App App ()
 convertFile filename fileString = do
