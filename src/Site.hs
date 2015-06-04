@@ -97,8 +97,8 @@ serveDescriptor = do
   putResponse $ setResponseCode 200 $ setContentType "application/json" emptyResponse
   writeBS descriptor
 
-handleStartCreateSubmit :: Handler App App ()
-handleStartCreateSubmit = writeBS ""
+handleCreateRequest :: Handler App App ()
+handleCreateRequest = render "file_form"
 
 ------------------------------------------------------------------------------
 -- | The application's routes.
@@ -109,7 +109,7 @@ routes = [ ("/login",    with auth handleLoginSubmit)
          , ("rest/heartbeat", heartbeatRequest)
          , ("",          serveDirectory "static")
          , ("/atlassian-connect.json", serveDescriptor)
-         , ("/start-create", handleStartCreateSubmit)
+         , ("/create", handleCreateRequest)
          ]
 
 
