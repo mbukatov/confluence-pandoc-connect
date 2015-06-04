@@ -1,0 +1,37 @@
+{{#.}}
+{
+   "description": "Import files and stuff",
+   "name": "Confluence Pandoc Connect",
+   "organization": "RD:Identity",
+   "externalAccess": true,
+   "links": {
+      "binary": {
+         "name": "docker.atlassian.io/atlassian/confluence-pandoc-connect",
+         "type": "docker",
+         "tag": "{{RELEASE_VERSION}}"
+      },
+      "healthcheck": {
+         "uri": "rest/heartbeat"
+      },
+      "source": {
+         "url": "https://stash.atlassian.com/users/aknoll/repos/pandoc-connect"
+      }
+   },
+   "owners": [
+      "aknoll@atlassian.com",
+      "jevans@atlassian.com",
+      "ciacullo@atlassian.com"
+   ],
+   "notifications": {
+      "pagerduty": {
+         "cloudwatch": "https://events.pagerduty.com/adapter/cloudwatch_sns/v1/124e0f010f214a9b9f30b768e7b18e69",
+         "apiKey": "5d11612f25b840faaf77422edeff9c76"
+      },
+      "email": "aknoll@atlassian.com"
+   },
+   "scaling": {
+      "min": 1
+   },
+   "downstreamServices": []
+}
+{{/.}}
