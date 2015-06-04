@@ -81,7 +81,7 @@ serveDescriptor = do
 \     \"modules\": {\
 \         \"webItems\": [\
 \             {\
-\                 \"url\": \"/start-create\",\
+\                 \"url\": \"/create\",\
 \                 \"key\": \"pandoc-import\",\
 \                 \"location\": \"system.content.action\",\
 \                 \"name\": {\
