@@ -2,7 +2,7 @@
 <html lang="en">
  <head>
      <link rel="stylesheet" href="//aui-cdn.atlassian.com/aui-adg/5.4.3/css/aui.css" media="all">
-     <script src="//localhost:2990/jira/atlassian-connect/all.js" type="text/javascript"></script>
+     <script src="//localhost:8080/confluence/atlassian-connect/all.js" type="text/javascript"></script>
  </head>
  <body>
      <section id="content" class="ac-content">
