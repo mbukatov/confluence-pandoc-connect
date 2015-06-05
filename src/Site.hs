@@ -183,6 +183,7 @@ routes = [ ("/login",    with auth handleLoginSubmit)
          , ("",          serveDirectory "static")
          , ("/atlassian-connect.json", serveDescriptor)
          , ("/create", handleCreateRequest)
+         , ("/all.js", serveFile "resources/all.js")
          ]
 
 
