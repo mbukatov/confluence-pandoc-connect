@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 ------------------------------------------------------------------------------
 -- | This module is where all the routes and handlers are defined for your
@@ -9,11 +10,13 @@ module Site
   ) where
 
 ------------------------------------------------------------------------------
+import Prelude hiding (readFile)
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Data.ByteString (ByteString)
+import           Data.ByteString (ByteString, readFile)
 import           Data.ByteString.Char8 (pack, unpack)
+import qualified Data.ByteString.Lazy as LBS
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text as T
@@ -132,21 +135,22 @@ convertFileFromFormData = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS "File upload failed"
 
-convertFile :: String -> String -> Handler App App ()
-convertFile filename fileString = do
+convertFile :: String -> ByteString -> Handler App App ()
+convertFile filename fileContent = do
   let errorOrReader = readerFromFilename filename
-  either
-    readFailed
-    (\(StringReader readerF)-> do
-      let read = readerF def
-      errorOrReadResult <- liftIO $ read fileString
-      either (readFailed . show) writeConfluenceStorageFormat errorOrReadResult
-    )
-    errorOrReader
+  either readFailed runReader errorOrReader
   where
     readFailed errorString = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS $ pack errorString
+    runReader (StringReader readerF) = do
+      let read = readerF def
+      errorOrReadResult <- liftIO . read . unpack $ fileContent
+      either (readFailed . show) writeConfluenceStorageFormat errorOrReadResult
+    runReader (ByteStringReader readerF) = do
+      let read = readerF def
+      errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
+      either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
 
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
