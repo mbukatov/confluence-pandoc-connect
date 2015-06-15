@@ -18,16 +18,16 @@ import           Snap.Snaplet.Session
 
 ------------------------------------------------------------------------------
 data App = App
-    { _heist :: Snaplet (Heist App)
-    , _sess  :: Snaplet SessionManager
-    , _auth  :: Snaplet (AuthManager App)
-    , _db    :: Snaplet Postgres
-    }
+  { _heist :: Snaplet (Heist App)
+  , _sess  :: Snaplet SessionManager
+  , _auth  :: Snaplet (AuthManager App)
+  , _db    :: Snaplet Postgres
+  }
 
 makeLenses ''App
 
 instance HasHeist App where
-    heistLens = subSnaplet heist
+  heistLens = subSnaplet heist
 
 instance HasPostgres (Handler b App) where
   getPostgresState = with db get
