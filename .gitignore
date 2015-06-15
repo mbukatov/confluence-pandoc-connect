@@ -4,3 +4,10 @@ log/
 cabal.sandbox.config
 production/to-copy
 dist/
+site_key.txt
+template-vars.csv
+micros-service.txt
+docker-*.output
+*.docker.properties
+*.docker.save.tar
+service-descriptor.json
