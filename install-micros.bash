@@ -32,11 +32,6 @@ echo "Setting the npm registry to use the atlassian registry."
 ./npm config set registry=https://npm.atlassian.io
 
 echo "Logging into the NPM registry with EACJ credentials: $EACJ_USER"
-##./npm login --registry=https://npm-private.atlassian.io --scope=atlassian <<CREDS
-##$EACJ_USER
-##$EACJ_PASSWORD
-##rmassaioli@atlassian.com
-##CREDS
 cat > ~/.npmrc <<RAWDOC
 registry=https://npm.atlassian.io/
 @atlassian:registry=https://npm-private.atlassian.io/

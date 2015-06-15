@@ -21,8 +21,6 @@ fi
 set -e
 echo "## Will fail immediately on error..."
 
-# TODO make sure that boot2docker has been run on linux
-# TODO setup the proper docker config
 COPY_DIR="production/to-copy"
 rm -fr "$COPY_DIR"
 mkdir -p "$COPY_DIR"
