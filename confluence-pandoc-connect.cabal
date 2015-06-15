@@ -35,6 +35,7 @@ Executable confluence-pandoc-connect
     , snap-core                 >= 0.9     && < 0.10
     , snap-server               >= 0.9     && < 0.10
     , snap-loader-static        >= 0.9     && < 0.10
+    , snaplet-postgresql-simple >= 0.6
     , text                      >= 0.11    && < 1.3
     , time                      >= 1.1     && < 1.6
     , transformers              >= 0.4     && < 0.5
