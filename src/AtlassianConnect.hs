@@ -15,7 +15,7 @@ addonDescriptor :: Plugin
 addonDescriptor =
   basePlugin
     { pluginName      = Just . Name $ "Confluence Pandoc Connect"
-    , pluginDescription  = Just "Import files into Confluence with the Pandoc document converter"
+    , pluginDescription  = Just "Import files into Confluence with the Pandoc document converter."
     , vendor         = Just $ Vendor (Name "Atlassian") atlassianHomepage
     , lifecycle = Just $ defaultLifecycle
         { enabled = Nothing
