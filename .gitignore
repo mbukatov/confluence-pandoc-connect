@@ -4,6 +4,7 @@ log/
 cabal.sandbox.config
 production/to-copy
 dist/
+amps-standalone/
 site_key.txt
 template-vars.csv
 micros-service.txt
