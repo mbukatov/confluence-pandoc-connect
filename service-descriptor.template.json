@@ -18,9 +18,7 @@
       }
    },
    "owners": [
-      "aknoll@atlassian.com",
-      "jevans@atlassian.com",
-      "ciacullo@atlassian.com"
+      "aknoll@atlassian.com"
    ],
    "notifications": {
       "pagerduty": {
