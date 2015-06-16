@@ -105,7 +105,7 @@ updateTenantDetails tenant conn =
 
 rawInsertTenantInformation :: Connection -> AC.LifecycleResponse -> IO [Integer]
 rawInsertTenantInformation conn lri@(AC.LifecycleResponseInstalled {}) =
-   fmap join . liftIO $ insertReturning conn [sql|
+   fmap join . liftIO $ query conn [sql|
       INSERT INTO tenant (key, publicKey, sharedSecret, baseUrl, productType)
       VALUES (?, ?, ?, ?, ?) RETURNING id
    |] (AC.lrClientKey lri, AC.lrPublicKey lri, AC.lrSharedSecret lri, show $ AC.lrBaseUrl lri, AC.lrProductType lri)
