@@ -18,7 +18,6 @@ import           Data.ByteString                             (ByteString,
 import           Data.ByteString.Char8                       (pack, unpack)
 import qualified Data.ByteString.Lazy                        as LBS
 import           Data.Maybe
-import           Data.Monoid
 import qualified Data.Text                                   as T
 import qualified Data.Text.Encoding                          as E
 import           Heist
@@ -39,40 +38,6 @@ import           Text.Pandoc
 
 heartbeatRequest :: Handler App App ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
-
-serveDescriptor :: Handler App App ()
-serveDescriptor = do
-  let descriptor = "{\
-\     \"name\": \"Confluence Pandoc Connect\",\
-\     \"description\": \"Atlassian Connect add-on\",\
-\     \"key\": \"io.atlassian.cpc\",\
-\     \"baseUrl\": \"http://localhost:8000\",\
-\     \"vendor\": {\
-\         \"name\": \"Atlassian\",\
-\         \"url\": \"http://www.atlassian.com\"\
-\     },\
-\     \"authentication\": {\
-\         \"type\": \"none\"\
-\     },\
-\     \"apiVersion\": 1,\
-\     \"modules\": {\
-\         \"webItems\": [\
-\             {\
-\                 \"url\": \"/create\",\
-\                 \"key\": \"pandoc-import\",\
-\                 \"location\": \"system.content.action\",\
-\                 \"name\": {\
-\                     \"value\": \"Import from file\"\
-\                 },\
-\                 \"target\": {\
-\                     \"type\": \"dialog\"\
-\                 }\
-\             }\
-\         ]\
-\     }\
-\ }"
-  putResponse $ setResponseCode 200 $ setContentType "application/json" emptyResponse
-  writeBS descriptor
 
 handleCreateRequest :: Handler App App ()
 handleCreateRequest =
@@ -146,7 +111,6 @@ routes, applicationRoutes :: [(ByteString, Handler App App ())]
 routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("rest/heartbeat", heartbeatRequest)
-  , ("/atlassian-connect.json", serveDescriptor)
   , ("/create", handleCreateRequest)
   , ("/all.js", serveFile "resources/all.js")
   ]
