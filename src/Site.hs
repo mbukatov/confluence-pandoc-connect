@@ -9,6 +9,7 @@ module Site
   ) where
 
 import           Application
+import           AtlassianConnect
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -24,6 +25,7 @@ import           Heist
 import qualified Heist.Interpreted                           as I
 import           LifecycleHandlers
 import           Prelude                                     hiding (readFile)
+import           Snap.AtlassianConnect
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Auth
@@ -162,7 +164,8 @@ app = makeSnaplet "app" "An snaplet example application." Nothing $ do
     a <- nestSnaplet "auth" auth $
            initJsonFileAuthManager defAuthSettings sess "users.json"
     db' <- nestSnaplet "db" db pgsInit
+    ac <- nestSnaplet "connect" connect $ initConnectSnaplet addonDescriptor
     addRoutes routes
     addAuthSplices h auth
-    return $ App h s a db'
+    return $ App h s a db' ac
 
