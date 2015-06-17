@@ -6,7 +6,7 @@
 # Haskell platform with us into production. Just the small set of required
 # dependencies.
 
-FROM zsol/haskell-platform-2014.2.0.0:plain
+FROM phadej/ghc:7.10.1
 MAINTAINER Avi Knoll <aknoll@atlassian.com>
 
 # Expose the default port, port 8000
@@ -19,7 +19,9 @@ RUN apt-get update && apt-get install -y libpq-dev
 # Copy our context into the build directory and start working from there
 USER root
 ADD /   /home/haskell/build
-RUN chown -R haskell:haskell /home/haskell/build
+RUN groupadd -r haskell \
+    && useradd -r -g haskell haskell \
+    && chown -R haskell:haskell /home/haskell
 
 # Setup the Haskell Envoronment
 USER haskell
@@ -27,15 +29,15 @@ WORKDIR /home/haskell/build
 ENV LANG en_US.UTF-8 # See: https://github.com/haskell/cabal/issues/1883#issuecomment-44150139
 ENV PATH /home/haskell/.cabal/bin:$PATH
 
-# Get the Haskell Dependencies
-RUN cabal update && cabal install cabal-install
-
 # Initiate the build environment and build the executable.
 #
 # IMPORTANT: This must produce a statically-compiled binary (with respect to
 # Cabal dependencies) that does not depend on a local cabal installation. The
 # production Docker image will not run a cabal install.
-RUN cabal sandbox init && cabal install --force-reinstalls
+RUN cabal update \
+    && cabal sandbox init \
+    && cabal sandbox add-source submodule/atlassian-connect-descriptor \
+    && cabal install --force-reinstalls
 
 # Setup the default command to run for the container.
 CMD ["/home/haskell/build/.cabal-sandbox/bin/confluence-pandoc-connect", "--access-log=-", "--error-log=stderr"]
