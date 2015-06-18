@@ -2,14 +2,13 @@ name:                confluence-pandoc-connect
 version:             0.1.0.2
 synopsis:            Import documents into Confluence with Pandoc.
 -- description:         
--- license:             
+license:             GPL
 license-file:        LICENSE
 author:              Avi Knoll
 maintainer:          aknoll@atlassian.com
--- copyright:           
+copyright:           Copyright 2015 Avi Knoll <aknoll@atlassian.com>
 category:            Web
 build-type:          Simple
--- extra-source-files:  
 cabal-version:       >= 1.22
 
 Flag development
@@ -18,8 +17,6 @@ Flag development
 
 Executable confluence-pandoc-connect
   main-is:             Main.hs
-  -- other-modules:       
-  -- other-extensions:    
   hs-source-dirs:      src
   default-language:    Haskell2010
 
