@@ -11,6 +11,7 @@
              </div>
          </div>
         <form class="aui" enctype="multipart/form-data" action="/create" method="post">
+            <input type="hidden" name="page-token" value="${connectPageToken}">
             <div class="field-group">
                 <label for="title-input">Page Title</label>
                 <input class="text medium-field" type="text"

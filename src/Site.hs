@@ -42,20 +42,31 @@ import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
 import           TenantJWT
 import           Text.Pandoc
+import           WithToken
 
 heartbeatRequest :: AppHandler ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
 
 handleCreateRequest :: AppHandler ()
 handleCreateRequest =
-  method GET (withTenant renderFileForm) <|>
+  method GET (withTokenAndTenant renderFileForm) <|>
   method POST convertFileFromFormData
 
-renderFileForm :: TenantWithUser -> AppHandler ()
-renderFileForm (tenant, _) =
-  heistLocal (I.bindString "productBaseUrl" productBaseUrl) $ render "file_form"
-  where
+renderFileForm :: PageToken -> TenantWithUser -> AppHandler ()
+renderFileForm token (tenant, _) = do
+  connectData <- getConnect
+  let
     productBaseUrl = T.pack $ show $ getURI $ baseUrl tenant
+    connectPageToken = E.decodeUtf8 $ encryptPageToken (connectAES connectData) token
+    splices = do
+      "productBaseUrl" ## productBaseUrl
+      "connectPageToken" ## connectPageToken
+  heistLocal (I.bindStrings splices) $ render "file_form"
+
+withTokenAndTenant :: (PageToken -> TenantWithUser -> AppHandler ()) -> AppHandler ()
+withTokenAndTenant processor = withTenant $ \ct -> do
+  token <- liftIO $ generateTokenCurrentTime ct
+  processor token ct
 
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
@@ -131,7 +142,7 @@ writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  withTenant $ createPage (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle) (T.pack writeResult)
+  tenantFromToken $ createPage (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle) (T.pack writeResult)
 
 -- | The application's routes.
 routes, applicationRoutes :: [(ByteString, AppHandler ())]
@@ -139,7 +150,6 @@ routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("rest/heartbeat", heartbeatRequest)
   , ("/create", handleCreateRequest)
-  , ("/all.js", serveFile "resources/all.js")
   ]
 
 -- | The application initializer.
