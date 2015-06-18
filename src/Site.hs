@@ -43,6 +43,7 @@ import           Snap.Util.FileUploads
 import           TenantJWT
 import           Text.Pandoc
 import           WithToken
+import qualified Web.JWT as JWT
 
 heartbeatRequest :: AppHandler ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
@@ -116,7 +117,10 @@ createPage filename fileContent (tenant, maybeUser) = do
   initReq <- liftIO $ HTTP.parseUrl . show $ fromJust (parseURIReference "/confluence/rest/api/content") `relativeTo` (getURI $ baseUrl tenant)
   let createPageRequest = initReq
         { HTTP.method = "POST"
-        , HTTP.requestHeaders = [ (hContentType, "application/json") ]
+        , HTTP.requestHeaders =
+            [ (hContentType, "application/json")
+            , tenantJwtHeader (tenant, maybeUser)
+            ]
         , HTTP.requestBody = HTTP.RequestBodyLBS $ A.encode PageDetails
                                { pageType = Page
                                , pageTitle = filename
@@ -126,6 +130,13 @@ createPage filename fileContent (tenant, maybeUser) = do
         }
   response <- liftIO $ HTTP.httpLbs createPageRequest manager
   liftIO $ HTTP.closeManager manager
+
+tenantJwtHeader :: TenantWithUser -> Header
+tenantJwtHeader (tenant, _) =
+  let cs = JWT.def
+        { JWT.iss = JWT.stringOrURI $ publicKey tenant
+        }
+  in (hAuthorization, E.encodeUtf8 $ JWT.encodeSigned JWT.HS256 (JWT.secret $ sharedSecret tenant) cs)
 
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
