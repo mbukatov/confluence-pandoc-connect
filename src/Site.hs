@@ -36,15 +36,15 @@ import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
 import           Text.Pandoc
 
-heartbeatRequest :: Handler App App ()
+heartbeatRequest :: AppHandler ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
 
-handleCreateRequest :: Handler App App ()
+handleCreateRequest :: AppHandler ()
 handleCreateRequest =
   method GET (render "file_form") <|>
   method POST convertFileFromFormData
 
-convertFileFromFormData :: Handler App App ()
+convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler
   maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
@@ -68,7 +68,7 @@ convertFileFromFormData = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS "File upload failed"
 
-convertFile :: String -> ByteString -> Handler App App ()
+convertFile :: String -> ByteString -> AppHandler ()
 convertFile filename fileContent = do
   let errorOrReader = readerFromFilename filename
   either readFailed runReader errorOrReader
@@ -95,7 +95,7 @@ readerFromFilename filename =
   where
     suffix = drop 1 $ dropWhile ('.' /=) filename
 
-writeConfluenceStorageFormat :: Pandoc -> Handler App App ()
+writeConfluenceStorageFormat :: Pandoc -> AppHandler ()
 writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
@@ -107,7 +107,7 @@ writeConfluenceStorageFormat pandoc = do
   return ()
 
 -- | The application's routes.
-routes, applicationRoutes :: [(ByteString, Handler App App ())]
+routes, applicationRoutes :: [(ByteString, AppHandler ())]
 routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("rest/heartbeat", heartbeatRequest)
