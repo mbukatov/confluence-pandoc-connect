@@ -48,8 +48,14 @@ heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
 
 handleCreateRequest :: AppHandler ()
 handleCreateRequest =
-  method GET (render "file_form") <|>
+  method GET (withTenant renderFileForm) <|>
   method POST convertFileFromFormData
+
+renderFileForm :: TenantWithUser -> AppHandler ()
+renderFileForm (tenant, _) =
+  heistLocal (I.bindString "productBaseUrl" productBaseUrl) $ render "file_form"
+  where
+    productBaseUrl = T.pack $ show $ getURI $ baseUrl tenant
 
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
