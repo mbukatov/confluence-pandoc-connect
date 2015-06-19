@@ -13,12 +13,14 @@ import           AtlassianConnect
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
+import           Control.Monad.State                         (get)
 import qualified Data.Aeson                                  as A
 import           Data.ByteString                             (ByteString,
                                                               readFile)
 import           Data.ByteString.Char8                       (pack, unpack)
 import qualified Data.ByteString.Lazy                        as LBS
 import           Data.Maybe
+import           Data.Monoid
 import qualified Data.Text                                   as T
 import qualified Data.Text.Encoding                          as E
 import           Heist
@@ -31,6 +33,7 @@ import           Network.URI
 import           Page
 import           Prelude                                     hiding (readFile)
 import           Snap.AtlassianConnect
+import qualified Snap.AtlassianConnect.HostRequest           as HR
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Auth
@@ -42,8 +45,8 @@ import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
 import           TenantJWT
 import           Text.Pandoc
+import qualified Web.JWT                                     as JWT
 import           WithToken
-import qualified Web.JWT as JWT
 
 heartbeatRequest :: AppHandler ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
@@ -110,26 +113,17 @@ convertFile filename fileContent = do
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
       either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
 
-createPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler ()
+createPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse String)
 createPage filename fileContent (tenant, maybeUser) = do
-  connectData <- getConnect
-  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
-  initReq <- liftIO $ HTTP.parseUrl . show $ fromJust (parseURIReference "/confluence/rest/api/content") `relativeTo` (getURI $ baseUrl tenant)
-  let createPageRequest = initReq
-        { HTTP.method = "POST"
-        , HTTP.requestHeaders =
-            [ (hContentType, "application/json")
-            , tenantJwtHeader (tenant, maybeUser)
-            ]
-        , HTTP.requestBody = HTTP.RequestBodyLBS $ A.encode PageDetails
-                               { pageType = Page
-                               , pageTitle = filename
-                               , pageSpace = Page.Space (Key "ds") -- TODO get space from request
-                               , pageBody = Body fileContent
-                               }
-        }
-  response <- liftIO $ HTTP.httpLbs createPageRequest manager
-  liftIO $ HTTP.closeManager manager
+  let requestBody = A.encode PageDetails
+                      { pageType = Page
+                      , pageTitle = filename
+                      , pageSpace = Page.Space (Key "ds") -- TODO get space from request
+                      , pageBody = Body fileContent
+                      }
+  with connect $ HR.hostPostRequest tenant "/rest/api/content" []
+                       $ HR.setBody (LBS.toStrict requestBody) <>
+                         HR.addHeader (hContentType, "application/json")
 
 tenantJwtHeader :: TenantWithUser -> Header
 tenantJwtHeader (tenant, _) =
@@ -153,7 +147,9 @@ writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  tenantFromToken $ createPage (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle) (T.pack writeResult)
+  errorOrResponse <- tenantFromToken $ createPage (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle) (T.pack writeResult)
+  -- TODO handle error/success cases properly
+  writeText . T.pack . show $ errorOrResponse
 
 -- | The application's routes.
 routes, applicationRoutes :: [(ByteString, AppHandler ())]

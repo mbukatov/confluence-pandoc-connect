@@ -33,7 +33,7 @@ instance HasPostgres (Handler b App) where
   setLocalPostgresState s = local $ set (db . snapletValue) s
 
 instance HasConnect (Handler b App) where
-   getConnect = with connect get
+  getConnect = with connect get
 
 type AppHandler = Handler App App
 
