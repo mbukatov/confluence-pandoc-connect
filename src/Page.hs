@@ -15,7 +15,11 @@ data PageDetails = PageDetails
   , pageTitle :: T.Text
   , pageSpace :: Space
   , pageBody  :: Body
+  , pageAncestors :: [PageId]
   }
+
+newtype PageId = PageId Integer
+  deriving (Generic, Eq, Show)
 
 data PageType = Page | Blogpost
   deriving (Generic, Eq, Enum, Show)
@@ -39,4 +43,5 @@ instance ToJSON PageDetails where
           , "representation" .= String "storage"
           ]
         ]
+    --, "ancestors" .= toJSON (map (\(PageId i) -> object ["type" .= String "page", "id" .= Number (fromInteger i)]) $ pageAncestors pd)
     ]
