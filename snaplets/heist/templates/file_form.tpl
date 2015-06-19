@@ -17,6 +17,11 @@
                 <input class="text medium-field" type="text"
                     id="page-title" name="page-title" placeholder="">
             </div>
+            <div class="field-group">
+                <label for="title-input">Space</label>
+                <input class="text medium-field" type="text"
+                    id="space-key" name="space-key" placeholder="">
+            </div>
            <fieldset>
                <legend><span>File upload</span></legend>
                 <div class="field-group">

@@ -19,6 +19,7 @@ import           Data.ByteString                             (ByteString,
                                                               readFile)
 import           Data.ByteString.Char8                       (pack, unpack)
 import qualified Data.ByteString.Lazy                        as LBS
+import Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text                                   as T
@@ -113,12 +114,12 @@ convertFile filename fileContent = do
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
       either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
 
-createPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse String)
-createPage filename fileContent (tenant, maybeUser) = do
+createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse String)
+createPage filename fileContent spaceKey (tenant, maybeUser) = do
   let requestBody = A.encode PageDetails
                       { pageType = Page
                       , pageTitle = filename
-                      , pageSpace = Page.Space (Key "ds") -- TODO get space from request
+                      , pageSpace = spaceKey
                       , pageBody = Body fileContent
                       }
   with connect $ HR.hostPostRequest tenant "/rest/api/content" []
@@ -138,9 +139,13 @@ readerFromFilename filename =
 writeConfluenceStorageFormat :: Pandoc -> AppHandler ()
 writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
+  maybeSpaceKey <- getParam "space-key"
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  errorOrResponse <- tenantFromToken $ createPage (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle) (T.pack writeResult)
+  errorOrResponse <- tenantFromToken $ createPage
+                       (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
+                       (T.pack writeResult)
+                       (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
   -- TODO handle error/success cases properly
   writeText . T.pack . show $ errorOrResponse
 
