@@ -2,7 +2,7 @@
 <html lang="en">
  <head>
      <link rel="stylesheet" href="//aui-cdn.atlassian.com/aui-adg/5.4.3/css/aui.css" media="all">
-     <script src="/all.js" type="text/javascript"></script>
+     <script src="${productBaseUrl}/atlassian-connect/all.js" type="text/javascript"></script>
  </head>
  <body>
      <section id="content" class="ac-content">
@@ -11,6 +11,7 @@
              </div>
          </div>
         <form class="aui" enctype="multipart/form-data" action="/create" method="post">
+            <input type="hidden" name="page-token" value="${connectPageToken}">
             <div class="field-group">
                 <label for="title-input">Page Title</label>
                 <input class="text medium-field" type="text"

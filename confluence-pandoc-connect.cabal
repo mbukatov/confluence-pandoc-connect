@@ -23,10 +23,14 @@ Executable confluence-pandoc-connect
   Build-depends:
       base                      >= 4.6     && < 5
     , aeson                     == 0.8.*
-    , atlassian-connect-core    == 0.6.*
+    , atlassian-connect-core    == 0.7.*
     , atlassian-connect-descriptor == 0.4.1.*
     , bytestring                >= 0.9.1   && < 0.11
+    , case-insensitive          == 1.2.*
     , heist                     >= 0.14    && < 0.15
+    , http-client               == 0.4.*
+    , http-types                == 0.8.*
+    , jwt                       == 0.6.*
     , lens                      >= 3.7.6   && < 4.12
     , MonadCatchIO-transformers >= 0.2.1   && < 0.4
     , mtl                       >= 2       && < 3

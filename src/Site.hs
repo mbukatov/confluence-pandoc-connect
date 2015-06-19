@@ -13,18 +13,27 @@ import           AtlassianConnect
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
+import           Control.Monad.State                         (get)
+import qualified Data.Aeson                                  as A
 import           Data.ByteString                             (ByteString,
                                                               readFile)
 import           Data.ByteString.Char8                       (pack, unpack)
 import qualified Data.ByteString.Lazy                        as LBS
 import           Data.Maybe
+import           Data.Monoid
 import qualified Data.Text                                   as T
 import qualified Data.Text.Encoding                          as E
 import           Heist
 import qualified Heist.Interpreted                           as I
+import           Key
 import           LifecycleHandlers
+import qualified Network.HTTP.Client                         as HTTP
+import           Network.HTTP.Types.Header
+import           Network.URI
+import           Page
 import           Prelude                                     hiding (readFile)
 import           Snap.AtlassianConnect
+import qualified Snap.AtlassianConnect.HostRequest           as HR
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Auth
@@ -34,17 +43,36 @@ import           Snap.Snaplet.PostgresqlSimple
 import           Snap.Snaplet.Session.Backends.CookieSession
 import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
+import           TenantJWT
 import           Text.Pandoc
+import qualified Web.JWT                                     as JWT
+import           WithToken
 
-heartbeatRequest :: Handler App App ()
+heartbeatRequest :: AppHandler ()
 heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
 
-handleCreateRequest :: Handler App App ()
+handleCreateRequest :: AppHandler ()
 handleCreateRequest =
-  method GET (render "file_form") <|>
+  method GET (withTokenAndTenant renderFileForm) <|>
   method POST convertFileFromFormData
 
-convertFileFromFormData :: Handler App App ()
+renderFileForm :: PageToken -> TenantWithUser -> AppHandler ()
+renderFileForm token (tenant, _) = do
+  connectData <- getConnect
+  let
+    productBaseUrl = T.pack $ show $ getURI $ baseUrl tenant
+    connectPageToken = E.decodeUtf8 $ encryptPageToken (connectAES connectData) token
+    splices = do
+      "productBaseUrl" ## productBaseUrl
+      "connectPageToken" ## connectPageToken
+  heistLocal (I.bindStrings splices) $ render "file_form"
+
+withTokenAndTenant :: (PageToken -> TenantWithUser -> AppHandler ()) -> AppHandler ()
+withTokenAndTenant processor = withTenant $ \ct -> do
+  token <- liftIO $ generateTokenCurrentTime ct
+  processor token ct
+
+convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler
   maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
@@ -60,7 +88,7 @@ convertFileFromFormData = do
               (\_ -> uploadFailed >> return Nothing)
               (\filePath -> do
                 fileContent <- liftIO $ readFile filePath
-                return . Just $ (unpack . fromJust $ partFileName fileInfo, fileContent)
+                return . Just $ (unpack . fromMaybe "empty file" $ partFileName fileInfo, fileContent)
               )
               errorOrFilePath
         else return Nothing
@@ -68,7 +96,7 @@ convertFileFromFormData = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS "File upload failed"
 
-convertFile :: String -> ByteString -> Handler App App ()
+convertFile :: String -> ByteString -> AppHandler ()
 convertFile filename fileContent = do
   let errorOrReader = readerFromFilename filename
   either readFailed runReader errorOrReader
@@ -85,6 +113,25 @@ convertFile filename fileContent = do
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
       either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
 
+createPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse String)
+createPage filename fileContent (tenant, maybeUser) = do
+  let requestBody = A.encode PageDetails
+                      { pageType = Page
+                      , pageTitle = filename
+                      , pageSpace = Page.Space (Key "ds") -- TODO get space from request
+                      , pageBody = Body fileContent
+                      }
+  with connect $ HR.hostPostRequest tenant "/rest/api/content" []
+                       $ HR.setBody (LBS.toStrict requestBody) <>
+                         HR.addHeader (hContentType, "application/json")
+
+tenantJwtHeader :: TenantWithUser -> Header
+tenantJwtHeader (tenant, _) =
+  let cs = JWT.def
+        { JWT.iss = JWT.stringOrURI $ publicKey tenant
+        }
+  in (hAuthorization, E.encodeUtf8 $ JWT.encodeSigned JWT.HS256 (JWT.secret $ sharedSecret tenant) cs)
+
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
   getReader $ case suffix of
@@ -95,24 +142,21 @@ readerFromFilename filename =
   where
     suffix = drop 1 $ dropWhile ('.' /=) filename
 
-writeConfluenceStorageFormat :: Pandoc -> Handler App App ()
+writeConfluenceStorageFormat :: Pandoc -> AppHandler ()
 writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  let splices = do
-        "newPageTitle" ##  E.decodeUtf8 $ fromJust maybePageTitle
-        "storageFormatResponse" ## T.pack writeResult
-  heistLocal (I.bindStrings splices) $ render "storage_formatted_response"
-  return ()
+  errorOrResponse <- tenantFromToken $ createPage (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle) (T.pack writeResult)
+  -- TODO handle error/success cases properly
+  writeText . T.pack . show $ errorOrResponse
 
 -- | The application's routes.
-routes, applicationRoutes :: [(ByteString, Handler App App ())]
+routes, applicationRoutes :: [(ByteString, AppHandler ())]
 routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("rest/heartbeat", heartbeatRequest)
   , ("/create", handleCreateRequest)
-  , ("/all.js", serveFile "resources/all.js")
   ]
 
 -- | The application initializer.
