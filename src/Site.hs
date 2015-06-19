@@ -125,13 +125,6 @@ createPage filename fileContent (tenant, maybeUser) = do
                        $ HR.setBody (LBS.toStrict requestBody) <>
                          HR.addHeader (hContentType, "application/json")
 
-tenantJwtHeader :: TenantWithUser -> Header
-tenantJwtHeader (tenant, _) =
-  let cs = JWT.def
-        { JWT.iss = JWT.stringOrURI $ publicKey tenant
-        }
-  in (hAuthorization, E.encodeUtf8 $ JWT.encodeSigned JWT.HS256 (JWT.secret $ sharedSecret tenant) cs)
-
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
   getReader $ case suffix of
