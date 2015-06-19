@@ -1,5 +1,5 @@
 name:                confluence-pandoc-connect
-version:             0.1.0.2
+version:             0.1.0.3
 synopsis:            Import documents into Confluence with Pandoc.
 -- description:         
 license:             GPL
