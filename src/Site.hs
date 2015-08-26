@@ -19,11 +19,12 @@ import           Data.ByteString                             (ByteString,
                                                               readFile)
 import           Data.ByteString.Char8                       (pack, unpack)
 import qualified Data.ByteString.Lazy                        as LBS
-import Data.List.Split
+import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text                                   as T
 import qualified Data.Text.Encoding                          as E
+import           Data.Version                                (showVersion)
 import           Heist
 import qualified Heist.Interpreted                           as I
 import           Key
@@ -32,6 +33,7 @@ import qualified Network.HTTP.Client                         as HTTP
 import           Network.HTTP.Types.Header
 import           Network.URI
 import           Page
+import           Paths_confluence_pandoc_connect             (version)
 import           Prelude                                     hiding (readFile)
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest           as HR
@@ -50,7 +52,9 @@ import qualified Web.JWT                                     as JWT
 import           WithToken
 
 heartbeatRequest :: AppHandler ()
-heartbeatRequest = putResponse $ setResponseCode 200 emptyResponse
+heartbeatRequest = do
+  putResponse $ setResponseCode 200 emptyResponse
+  writeText . T.pack $ showVersion version
 
 handleCreateRequest :: AppHandler ()
 handleCreateRequest =
