@@ -17,17 +17,12 @@ USER root
 RUN apt-get update && apt-get install -y libpq-dev
 
 # Copy our context into the build directory and start working from there
-USER root
-ADD /   /home/haskell/build
-RUN groupadd -r haskell \
-    && useradd -r -g haskell haskell \
-    && chown -R haskell:haskell /home/haskell
+ADD /   /root/build
+ADD ./submodule /root/build/submodule
 
 # Setup the Haskell Envoronment
-USER haskell
-WORKDIR /home/haskell/build
+WORKDIR /root/build
 ENV LANG en_US.UTF-8 # See: https://github.com/haskell/cabal/issues/1883#issuecomment-44150139
-ENV PATH /home/haskell/.cabal/bin:$PATH
 
 # Initiate the build environment and build the executable.
 #
@@ -36,8 +31,8 @@ ENV PATH /home/haskell/.cabal/bin:$PATH
 # production Docker image will not run a cabal install.
 RUN cabal update \
     && cabal sandbox init \
-    && cabal sandbox add-source submodule/atlassian-connect-descriptor \
+    && cabal sandbox add-source /root/build/submodule/atlassian-connect-descriptor \
     && cabal install --force-reinstalls
 
 # Setup the default command to run for the container.
-CMD ["/home/haskell/build/.cabal-sandbox/bin/confluence-pandoc-connect", "--access-log=-", "--error-log=stderr"]
+CMD ["/root/build/.cabal-sandbox/bin/confluence-pandoc-connect", "--access-log=-", "--error-log=stderr"]

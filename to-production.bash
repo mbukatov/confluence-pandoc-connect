@@ -51,7 +51,7 @@ fi
 
 # It is important to note that only copying this file implicitly implies that we will statically
 # compile the binary.
-time ${DOCKER_CMD} cp "$CONTAINER_ID:/home/haskell/build/.cabal-sandbox/bin/confluence-pandoc-connect" "$COPY_DIR"
+time ${DOCKER_CMD} cp "$CONTAINER_ID:/root/build/.cabal-sandbox/bin/confluence-pandoc-connect" "$COPY_DIR"
 
 echo "## Building the production Docker image."
 cd production

@@ -39,9 +39,9 @@ ${DOCKER_CMD} images
 
 echo "Cleaning up all images and containers..."
 # Delete all containers
-${DOCKER_CMD} rm -f $(${DOCKER_CMD} ps -a -q)
+#${DOCKER_CMD} rm -f $(${DOCKER_CMD} ps -a -q)
 # Delete all images
-${DOCKER_CMD} rmi -f $(${DOCKER_CMD} images -q)
+#${DOCKER_CMD} rmi -f $(${DOCKER_CMD} images -q)
 
 echo "Listing cleansed images..."
 ${DOCKER_CMD} images
@@ -74,7 +74,7 @@ then
 fi
 
 echo "Pushing $DOCKER_PUSH_LOCATION to $DOCKER_REMOTE"
-${DOCKER_CMD} push "$DOCKER_PUSH_LOCATION" 2>&1 > docker-push.output
+${DOCKER_CMD} push -f "$DOCKER_PUSH_LOCATION" 2>&1 > docker-push.output
 
 if grep 'level="fatal"' docker-push.output
 then

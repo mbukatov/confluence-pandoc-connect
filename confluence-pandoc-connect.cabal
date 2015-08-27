@@ -35,7 +35,7 @@ Executable confluence-pandoc-connect
     , MonadCatchIO-transformers >= 0.2.1   && < 0.4
     , mtl                       >= 2       && < 3
     , network-uri               == 2.6.*
-    , pandoc                    >= 1.14    && < 1.15
+    , pandoc                    == 1.15.*
     , postgresql-simple         >= 0.4.10  && < 0.5
     , resource-pool-catchio     == 0.2.*
     , split                     == 0.2.*
@@ -44,7 +44,7 @@ Executable confluence-pandoc-connect
     , snap-server               >= 0.9     && < 0.10
     , snap-loader-static        >= 0.9     && < 0.10
     , snaplet-postgresql-simple >= 0.6
-    , text                      >= 0.11    && < 1.3
+    , text                      == 1.2.*
     , time                      >= 1.1     && < 1.6
     , transformers              >= 0.4     && < 0.5
     , xmlhtml                   >= 0.1     && < 0.3
