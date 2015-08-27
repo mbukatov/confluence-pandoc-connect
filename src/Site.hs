@@ -11,14 +11,17 @@ module Site
 import           Application
 import           AtlassianConnect
 import           Control.Applicative
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.State                         (get)
 import qualified Data.Aeson                                  as A
+import qualified Data.Aeson.Lens                             as A
 import           Data.ByteString                             (ByteString,
                                                               readFile)
 import           Data.ByteString.Char8                       (pack, unpack)
 import qualified Data.ByteString.Lazy                        as LBS
+import           Data.Foldable                               (traverse_)
 import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
@@ -118,7 +121,7 @@ convertFile filename fileContent = do
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
       either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
 
-createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse String)
+createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey (tenant, maybeUser) = do
   let requestBody = A.encode PageDetails
                       { pageType = Page
@@ -150,8 +153,21 @@ writeConfluenceStorageFormat pandoc = do
                        (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
                        (T.pack writeResult)
                        (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
-  -- TODO handle error/success cases properly
-  writeText . T.pack . show $ errorOrResponse
+  -- TODO handle error cases properly
+  traverse_ (either writeShow pageRedirect) errorOrResponse
+
+writeShow :: Show a => a -> AppHandler ()
+writeShow = writeText . T.pack . show
+
+-- TODO handle error cases properly
+pageRedirect :: A.Value -> AppHandler ()
+pageRedirect o = maybe (redirect "/create") jsRedirect wu
+  where
+    links = o ^? A.key "_links"
+    link s = links ^? folded . A.key s . A._String
+    wu = link "base" <> link "webui"
+    jsRedirect d =
+      heistLocal (I.bindStrings $ "destination" ## d) $ render "page_redirect_dialog"
 
 -- | The application's routes.
 routes, applicationRoutes :: [(ByteString, AppHandler ())]
