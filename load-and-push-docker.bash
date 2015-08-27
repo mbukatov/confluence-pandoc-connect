@@ -74,7 +74,7 @@ then
 fi
 
 echo "Pushing $DOCKER_PUSH_LOCATION to $DOCKER_REMOTE"
-${DOCKER_CMD} push -f "$DOCKER_PUSH_LOCATION" 2>&1 > docker-push.output
+${DOCKER_CMD} push "$DOCKER_PUSH_LOCATION" 2>&1 > docker-push.output
 
 if grep 'level="fatal"' docker-push.output
 then
