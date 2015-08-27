@@ -129,11 +129,13 @@ function Strikeout(s)
 end
 
 function Link(s, src, tit)
-  return "<a href='" .. escape(src,true) .. "'>" .. s .. "</a>"
+  return "<a href='" .. escape(src, true) .. "'>" .. s .. "</a>"
 end
 
 function Image(s, src, tit)
-  return "<ac:image><ri:url ri:value='" .. escape(src,true) .. "' /></ac:image>"
+  return "<ac:image ac:alt='" .. escape(tit, true) ..
+    "'><ri:url ri:value='" .. escape(src, true) ..
+    "' /></ac:image>"
 end
 
 function Code(s, attr)
@@ -202,8 +204,9 @@ function CodeBlock(s, attr)
     return '<img src="data:image/png;base64,' .. png .. '"/>'
   -- otherwise treat as code (one could pipe through a highlighter)
   else
-    return "<pre><code" .. attributes(attr) .. ">" .. escape(s) ..
-           "</code></pre>"
+    return "<ac:structured-macro ac:name='code'>" ..
+      "<ac:plain-text-body><![CDATA[" .. s .. "]]></ac:plain-text-body>" ..
+      "</ac:structured-macro>"
   end
 end
 
@@ -291,7 +294,7 @@ function Table(caption, aligns, widths, headers, rows)
     end
     add('</tr>')
   end
-  add('</table')
+  add('</table>')
   return table.concat(buffer,'\n')
 end
 
