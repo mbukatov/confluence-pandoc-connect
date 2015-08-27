@@ -1,10 +1,5 @@
--- This is a sample custom writer for pandoc.  It produces output
--- that is very similar to that of pandoc's HTML writer.
--- There is one new feature: code blocks marked with class 'dot'
--- are piped through graphviz and images are included in the HTML
--- output using 'data:' URLs.
---
--- Invoke with: pandoc -t sample.lua
+-- This is a custom writer for Pandoc to output Confluence Storage Format.
+-- It is based on the sample custom HTML writer packaged with Pandoc.
 --
 -- Note:  you need not have lua installed on your system to use this
 -- custom writer.  However, if you do have lua installed, you can
