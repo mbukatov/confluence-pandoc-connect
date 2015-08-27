@@ -138,7 +138,7 @@ readerFromFilename filename =
     "mw" -> "mediawiki"
     _ -> suffix
   where
-    suffix = drop 1 $ dropWhile ('.' /=) filename
+    suffix = reverse $ takeWhile ('.' /=) $ reverse filename
 
 writeConfluenceStorageFormat :: Pandoc -> AppHandler ()
 writeConfluenceStorageFormat pandoc = do
