@@ -17,8 +17,7 @@ USER root
 RUN apt-get update && apt-get install -y libpq-dev
 
 # Copy our context into the build directory and start working from there
-ADD /   /root/build
-ADD ./submodule /root/build/submodule
+ADD .   /root/build
 
 # Setup the Haskell Envoronment
 WORKDIR /root/build

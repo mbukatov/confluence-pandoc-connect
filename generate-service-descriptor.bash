@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
-npm install mustang
 MUSTANG_EXECUTABLE="${MUSTANG_EXECUTABLE:-./node_modules/mustang/lib/app.js}"
+if [ ! -x "${MUSTANG_EXECUTABLE}" ]; then
+   npm install mustang
+fi
 
 TEMPLATES_FILE="${TEMPLATES_FILE:-template-vars.csv}"
 echo "RELEASE_VERSION" > "${TEMPLATES_FILE}"

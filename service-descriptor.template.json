@@ -4,6 +4,10 @@
    "name": "Confluence Pandoc Connect",
    "organization": "RD:Identity",
    "externalAccess": true,
+   "resources": [{
+      "type": "postgres-db",
+      "name": "confluence-pandoc-connect"
+   }],
    "links": {
       "binary": {
          "name": "docker.atlassian.io/atlassian/confluence-pandoc-connect",
