@@ -20,6 +20,7 @@ import qualified Data.Aeson.Lens                             as A
 import qualified Data.ByteString                             as BS
 import qualified Data.ByteString.Char8                       as BC
 import qualified Data.ByteString.Lazy                        as LBS
+import qualified Data.CaseInsensitive                        as CI
 import           Data.Foldable                               (traverse_)
 import           Data.List.Split
 import           Data.Maybe
@@ -51,6 +52,7 @@ import           Snap.Util.FileUploads
 import           System.Environment                          (getEnv)
 import           TenantJWT
 import           Text.Pandoc
+import           Text.Pandoc.MediaBag
 import qualified Web.JWT                                     as JWT
 import           WithToken
 
@@ -119,7 +121,24 @@ convertFile filename fileContent = do
     runReader (ByteStringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
-      either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
+      either
+        (readFailed . show)
+        (\(pandoc, mediaBag) -> do
+             writeConfluenceStorageFormat pandoc
+             -- uploadMedia mediaBag -- TODO call this with args
+        )
+        errorOrReadResult
+
+uploadMedia :: T.Text -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+uploadMedia contentId mediaBag (tenant, maybeUser) = do
+  let files = error "not implemented"
+  with connect $ HR.hostPostRequest tenant (BC.pack attachmentUrl) []
+                    $ HR.addHeader (hContentType, "multipart/form-data") <>
+                      HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
+                      HR.setPostParams files
+  where
+    attachmentUrl = "/rest/api/content/" ++ show contentId ++ "/attachment"
+
 
 createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey (tenant, maybeUser) = do
