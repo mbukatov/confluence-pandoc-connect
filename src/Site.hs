@@ -15,9 +15,8 @@ import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.State                         (get)
 import qualified Data.Aeson                                  as A
-import           Data.ByteString                             (ByteString,
-                                                              readFile)
-import           Data.ByteString.Char8                       (pack, unpack)
+import qualified Data.ByteString                             as BS
+import qualified Data.ByteString.Char8                       as BC
 import qualified Data.ByteString.Lazy                        as LBS
 import           Data.List.Split
 import           Data.Maybe
@@ -34,7 +33,7 @@ import           Network.HTTP.Types.Header
 import           Network.URI
 import           Page
 import           Paths_confluence_pandoc_connect             (version)
-import           Prelude                                     hiding (readFile)
+import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest           as HR
 import           Snap.Core
@@ -46,6 +45,7 @@ import           Snap.Snaplet.PostgresqlSimple
 import           Snap.Snaplet.Session.Backends.CookieSession
 import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
+import           System.Environment                          (getEnv)
 import           TenantJWT
 import           Text.Pandoc
 import qualified Web.JWT                                     as JWT
@@ -92,8 +92,8 @@ convertFileFromFormData = do
             either
               (\_ -> uploadFailed >> return Nothing)
               (\filePath -> do
-                fileContent <- liftIO $ readFile filePath
-                return . Just $ (unpack . fromMaybe "empty file" $ partFileName fileInfo, fileContent)
+                fileContent <- liftIO $ BS.readFile filePath
+                return . Just $ (BC.unpack . fromMaybe "empty file" $ partFileName fileInfo, fileContent)
               )
               errorOrFilePath
         else return Nothing
@@ -101,17 +101,17 @@ convertFileFromFormData = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS "File upload failed"
 
-convertFile :: String -> ByteString -> AppHandler ()
+convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent = do
   let errorOrReader = readerFromFilename filename
   either readFailed runReader errorOrReader
   where
     readFailed errorString = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
-      writeBS $ pack errorString
+      writeBS $ BC.pack errorString
     runReader (StringReader readerF) = do
       let read = readerF def
-      errorOrReadResult <- liftIO . read . unpack $ fileContent
+      errorOrReadResult <- liftIO . read . BC.unpack $ fileContent
       either (readFailed . show) writeConfluenceStorageFormat errorOrReadResult
     runReader (ByteStringReader readerF) = do
       let read = readerF def
@@ -154,12 +154,15 @@ writeConfluenceStorageFormat pandoc = do
   writeText . T.pack . show $ errorOrResponse
 
 -- | The application's routes.
-routes, applicationRoutes :: [(ByteString, AppHandler ())]
+routes, applicationRoutes :: [(BS.ByteString, AppHandler ())]
 routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("rest/heartbeat", heartbeatRequest)
   , ("/create", handleCreateRequest)
   ]
+
+dbConfigFromEnv :: IO PGSConfig
+dbConfigFromEnv = pgsDefaultConfig . BC.pack <$> getEnv "PG_CONFLUENCE_PANDOC_CONNECT_URL"
 
 -- | The application initializer.
 app :: SnapletInit App App
@@ -173,7 +176,8 @@ app = makeSnaplet "app" "An snaplet example application." Nothing $ do
     -- you'll probably want to change this to a more robust auth backend.
     a <- nestSnaplet "auth" auth $
            initJsonFileAuthManager defAuthSettings sess "users.json"
-    db' <- nestSnaplet "db" db pgsInit
+    dbConfig <- liftIO dbConfigFromEnv
+    db' <- nestSnaplet "db" db $ pgsInit' dbConfig
     ac <- nestSnaplet "connect" connect $ initConnectSnaplet addonDescriptor
     addRoutes routes
     addAuthSplices h auth
