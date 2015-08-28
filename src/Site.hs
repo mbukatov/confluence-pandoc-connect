@@ -14,34 +14,35 @@ import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
-import qualified Data.Aeson                                  as A
-import qualified Data.Aeson.Lens                             as A
-import qualified Data.ByteString                             as BS
-import qualified Data.ByteString.Char8                       as BC
-import qualified Data.ByteString.Lazy                        as LBS
-import qualified Data.CaseInsensitive                        as CI
-import           Data.Foldable                               (traverse_)
+import qualified Data.Aeson                        as A
+import qualified Data.Aeson.Lens                   as A
+import qualified Data.ByteString                   as BS
+import qualified Data.ByteString.Char8             as BC
+import qualified Data.ByteString.Lazy              as LBS
+import qualified Data.CaseInsensitive              as CI
+import           Data.Foldable                     (traverse_)
 import           Data.Maybe
 import           Data.Monoid
-import qualified Data.Text                                   as T
-import qualified Data.Text.Encoding                          as E
-import           Data.Version                                (showVersion)
+import qualified Data.Text                         as T
+import qualified Data.Text.Encoding                as E
+import           Data.Text.Lens                    (unpacked)
+import           Data.Version                      (showVersion)
 import           Heist
-import qualified Heist.Interpreted                           as I
+import qualified Heist.Interpreted                 as I
 import           Key
 import           LifecycleHandlers
 import           Network.HTTP.Types.Header
 import           Page
-import           Paths_confluence_pandoc_connect             (version)
+import           Paths_confluence_pandoc_connect   (version)
 import           Prelude
 import           Snap.AtlassianConnect
-import qualified Snap.AtlassianConnect.HostRequest           as HR
+import qualified Snap.AtlassianConnect.HostRequest as HR
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
 import           Snap.Util.FileUploads
-import           System.Environment                          (getEnv)
+import           System.Environment                (getEnv)
 import           TenantJWT
 import           Text.Pandoc
 import           Text.Pandoc.MediaBag
@@ -116,7 +117,8 @@ convertFile filename fileContent = do
         (readFailed . show)
         (\(pandoc, mediaBag) -> do
              pageId <- fromJust <$> writeConfluenceStorageFormat pandoc
-             _ <- tenantFromToken $ uploadMedia pageId mediaBag -- TODO handle attachment upload failure
+             resp <- tenantFromToken $ uploadMedia pageId mediaBag -- TODO handle attachment upload failure
+             logError . BC.pack $ "upload reponse: " ++ show resp
              return ()
         )
         errorOrReadResult
@@ -128,7 +130,7 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) =
                       HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
                       HR.setPostParams postParams
   where
-    attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/attachment"
+    attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/child/attachment"
     allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
     postParams = map (\ (path, mime, content) -> (BC.pack path, LBS.toStrict content)) allFiles
 
@@ -170,14 +172,15 @@ writeConfluenceStorageFormat pandoc = do
   return pageId
   where
     getPageId :: A.Value -> Maybe PageId
-    getPageId o = PageId <$> o ^? A.key "id" . A._Integer
+    getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
 
 writeShow :: Show a => a -> AppHandler ()
 writeShow = writeText . T.pack . show
 
 -- TODO handle error cases properly
 pageRedirect :: A.Value -> AppHandler ()
-pageRedirect o = maybe (redirect "/create") jsRedirect wu
+pageRedirect o = do
+  maybe (writeText "Sorry, your upload failed") jsRedirect wu
   where
     links = o ^? A.key "_links"
     link s = links ^? folded . A.key s . A._String
