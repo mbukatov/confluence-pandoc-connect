@@ -130,15 +130,15 @@ convertFile filename fileContent = do
         errorOrReadResult
 
 uploadMedia :: T.Text -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-uploadMedia contentId mediaBag (tenant, maybeUser) = do
-  let files = error "not implemented"
+uploadMedia contentId mediaBag (tenant, maybeUser) =
   with connect $ HR.hostPostRequest tenant (BC.pack attachmentUrl) []
                     $ HR.addHeader (hContentType, "multipart/form-data") <>
                       HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
-                      HR.setPostParams files
+                      HR.setPostParams postParams
   where
     attachmentUrl = "/rest/api/content/" ++ show contentId ++ "/attachment"
-
+    allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
+    postParams = map (\ (path, mime, content) -> (BC.pack path, LBS.toStrict content)) allFiles
 
 createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey (tenant, maybeUser) = do
