@@ -48,6 +48,7 @@ Executable confluence-pandoc-connect
     , text                      == 1.2.*
     , time                      >= 1.1     && < 1.6
     , transformers              >= 0.4     && < 0.5
+    , unordered-containers      >= 0.2     && < 0.3
     , xmlhtml                   >= 0.1     && < 0.3
 
   if flag(development)

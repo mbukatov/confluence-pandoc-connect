@@ -5,6 +5,7 @@ module AtlassianConnect
   ) where
 
 import           Data.Connect.Descriptor
+import qualified Data.HashMap.Strict     as HM
 import           Data.Maybe
 import           Data.Text               as T
 import           Network.URI
@@ -48,7 +49,7 @@ importDocumentMenuItem = WebItem
   , wiTarget = Just $ TargetDialog Nothing
   , wiStyleClasses = []
   , wiContext = Just AddonContext
-  , wiConditions = [] -- TODO(CPC-21) only show if the user can create pages
+  , wiConditions = [ SingleCondition (StaticConfluenceCondition CreateContentConfluenceCondition) False (HM.singleton "content" "page") ]
   , wiParams = noParams
   }
   where
