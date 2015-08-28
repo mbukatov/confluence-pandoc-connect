@@ -14,7 +14,6 @@ import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Control.Monad.State                         (get)
 import qualified Data.Aeson                                  as A
 import qualified Data.Aeson.Lens                             as A
 import qualified Data.ByteString                             as BS
@@ -22,7 +21,6 @@ import qualified Data.ByteString.Char8                       as BC
 import qualified Data.ByteString.Lazy                        as LBS
 import qualified Data.CaseInsensitive                        as CI
 import           Data.Foldable                               (traverse_)
-import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text                                   as T
@@ -32,9 +30,7 @@ import           Heist
 import qualified Heist.Interpreted                           as I
 import           Key
 import           LifecycleHandlers
-import qualified Network.HTTP.Client                         as HTTP
 import           Network.HTTP.Types.Header
-import           Network.URI
 import           Page
 import           Paths_confluence_pandoc_connect             (version)
 import           Prelude
@@ -42,18 +38,13 @@ import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest           as HR
 import           Snap.Core
 import           Snap.Snaplet
-import           Snap.Snaplet.Auth
-import           Snap.Snaplet.Auth.Backends.JsonFile
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
-import           Snap.Snaplet.Session.Backends.CookieSession
-import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
 import           System.Environment                          (getEnv)
 import           TenantJWT
 import           Text.Pandoc
 import           Text.Pandoc.MediaBag
-import qualified Web.JWT                                     as JWT
 import           WithToken
 
 heartbeatRequest :: AppHandler ()
@@ -117,26 +108,27 @@ convertFile filename fileContent = do
     runReader (StringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read . BC.unpack $ fileContent
-      either (readFailed . show) writeConfluenceStorageFormat errorOrReadResult
+      either (readFailed . show) ((\_ -> return ()) <$> writeConfluenceStorageFormat) errorOrReadResult
     runReader (ByteStringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
       either
         (readFailed . show)
         (\(pandoc, mediaBag) -> do
-             writeConfluenceStorageFormat pandoc
-             -- uploadMedia mediaBag -- TODO call this with args
+             pageId <- fromJust <$> writeConfluenceStorageFormat pandoc
+             _ <- tenantFromToken $ uploadMedia pageId mediaBag -- TODO handle attachment upload failure
+             return ()
         )
         errorOrReadResult
 
-uploadMedia :: T.Text -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-uploadMedia contentId mediaBag (tenant, maybeUser) =
+uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) =
   with connect $ HR.hostPostRequest tenant (BC.pack attachmentUrl) []
                     $ HR.addHeader (hContentType, "multipart/form-data") <>
                       HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
                       HR.setPostParams postParams
   where
-    attachmentUrl = "/rest/api/content/" ++ show contentId ++ "/attachment"
+    attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/attachment"
     allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
     postParams = map (\ (path, mime, content) -> (BC.pack path, LBS.toStrict content)) allFiles
 
@@ -162,7 +154,7 @@ readerFromFilename filename =
   where
     suffix = reverse $ takeWhile ('.' /=) $ reverse filename
 
-writeConfluenceStorageFormat :: Pandoc -> AppHandler ()
+writeConfluenceStorageFormat :: Pandoc -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   maybeSpaceKey <- getParam "space-key"
@@ -173,7 +165,12 @@ writeConfluenceStorageFormat pandoc = do
                        (T.pack writeResult)
                        (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
   -- TODO handle error cases properly
+  let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
   traverse_ (either writeShow pageRedirect) errorOrResponse
+  return pageId
+  where
+    getPageId :: A.Value -> Maybe PageId
+    getPageId o = PageId <$> o ^? A.key "id" . A._Integer
 
 writeShow :: Show a => a -> AppHandler ()
 writeShow = writeText . T.pack . show
