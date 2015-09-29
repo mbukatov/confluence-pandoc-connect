@@ -128,7 +128,7 @@ function Link(s, src, tit)
 end
 
 function imageRi(path)
-  if string.find(path, "^media/") then
+  if string.find(path, "^media/") ~= nil then
     local _, _, _, name = string.find(path, "(.*/)(.*)$")
     return "<ri:attachment ri:filename='" .. escape(name, true) .. "' />"
   else
