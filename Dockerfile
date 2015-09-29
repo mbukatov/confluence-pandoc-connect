@@ -6,7 +6,7 @@
 # Haskell platform with us into production. Just the small set of required
 # dependencies.
 
-FROM phadej/ghc:7.10.1
+FROM phadej/ghc:7.10.2
 MAINTAINER Avi Knoll <aknoll@atlassian.com>
 
 # Expose the default port, port 8000

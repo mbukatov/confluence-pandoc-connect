@@ -127,9 +127,22 @@ function Link(s, src, tit)
   return "<a href='" .. escape(src, true) .. "'>" .. s .. "</a>"
 end
 
+function imageRi(path)
+  if string.find(path, "^media/") ~= nil then
+    local _, _, _, name = string.find(path, "(.*/)(.*)$")
+    return "<ri:attachment ri:filename='" .. escape(name, true) .. "' />"
+  else
+    return "<ri:url ri:value='" .. escape(path, true) .. "' />"
+  end
+end
+
 function Image(s, src, tit)
-  return "<ac:image ac:alt='" .. escape(tit, true) ..
-    "'><ri:url ri:value='" .. escape(src, true) ..
+  return "<ac:image ac:alt='" .. escape(tit, true) .. "'>" .. imageRi(src) .."</ac:image>"
+end
+
+function CaptionedImage(src, tit, txt)
+  return "<ac:image ac:alt='" .. escape(txt, true) ..
+    "'><ri:url ri:value='" .. escape(stripAttachmentPath(src), true) ..
     "' /></ac:image>"
 end
 

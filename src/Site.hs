@@ -14,44 +14,41 @@ import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Control.Monad.State                         (get)
-import qualified Data.Aeson                                  as A
-import qualified Data.Aeson.Lens                             as A
-import qualified Data.ByteString                             as BS
-import qualified Data.ByteString.Char8                       as BC
-import qualified Data.ByteString.Lazy                        as LBS
-import           Data.Foldable                               (traverse_)
-import           Data.List.Split
+import qualified Data.Aeson                            as A
+import qualified Data.Aeson.Lens                       as A
+import qualified Data.ByteString                       as BS
+import qualified Data.ByteString.Char8                 as BC
+import qualified Data.ByteString.Lazy                  as LBS
+import qualified Data.CaseInsensitive                  as CI
+import           Data.Foldable                         (traverse_)
 import           Data.Maybe
 import           Data.Monoid
-import qualified Data.Text                                   as T
-import qualified Data.Text.Encoding                          as E
-import           Data.Version                                (showVersion)
+import qualified Data.Text                             as T
+import qualified Data.Text.Encoding                    as E
+import           Data.Text.Lens                        (unpacked)
+import           Data.Version                          (showVersion)
 import           Heist
-import qualified Heist.Interpreted                           as I
+import qualified Heist.Interpreted                     as I
 import           Key
 import           LifecycleHandlers
-import qualified Network.HTTP.Client                         as HTTP
+import           Network.HTTP.Client                   (RequestBody (..),
+                                                        requestBody)
+import           Network.HTTP.Client.MultipartFormData as MFD
 import           Network.HTTP.Types.Header
-import           Network.URI
 import           Page
-import           Paths_confluence_pandoc_connect             (version)
+import           Paths_confluence_pandoc_connect       (version)
 import           Prelude
 import           Snap.AtlassianConnect
-import qualified Snap.AtlassianConnect.HostRequest           as HR
+import qualified Snap.AtlassianConnect.HostRequest     as HR
 import           Snap.Core
 import           Snap.Snaplet
-import           Snap.Snaplet.Auth
-import           Snap.Snaplet.Auth.Backends.JsonFile
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
-import           Snap.Snaplet.Session.Backends.CookieSession
-import           Snap.Util.FileServe
 import           Snap.Util.FileUploads
-import           System.Environment                          (getEnv)
+import           System.Environment                    (getEnv)
 import           TenantJWT
 import           Text.Pandoc
-import qualified Web.JWT                                     as JWT
+import           Text.Pandoc.MediaBag
 import           WithToken
 
 heartbeatRequest :: AppHandler ()
@@ -115,11 +112,34 @@ convertFile filename fileContent = do
     runReader (StringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read . BC.unpack $ fileContent
-      either (readFailed . show) writeConfluenceStorageFormat errorOrReadResult
+      either (readFailed . show) (void . writeConfluenceStorageFormat) errorOrReadResult
     runReader (ByteStringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
-      either (readFailed . show) writeConfluenceStorageFormat $ fmap fst errorOrReadResult
+      either
+        (readFailed . show)
+        (\(pandoc, mediaBag) -> do
+             pageId <- fromJust <$> writeConfluenceStorageFormat pandoc
+             resp <- tenantFromToken $ uploadMedia pageId mediaBag -- TODO handle attachment upload failure
+             logError . BC.pack $ "upload reponse: " ++ show resp
+             return ()
+        )
+        errorOrReadResult
+
+uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
+  boundary <- liftIO webkitBoundary
+  body <- liftIO $ renderParts boundary parts
+  let request = HR.hostPostRequest tenant (BC.pack attachmentUrl) []
+                    $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
+                      HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
+                      Endo (\r -> r { requestBody = body })
+  with connect request
+  where
+    attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/child/attachment"
+    allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
+    partTransform (path, mime, content) = (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
+    parts = map partTransform allFiles
 
 createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey (tenant, maybeUser) = do
@@ -143,7 +163,7 @@ readerFromFilename filename =
   where
     suffix = reverse $ takeWhile ('.' /=) $ reverse filename
 
-writeConfluenceStorageFormat :: Pandoc -> AppHandler ()
+writeConfluenceStorageFormat :: Pandoc -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   maybeSpaceKey <- getParam "space-key"
@@ -154,14 +174,20 @@ writeConfluenceStorageFormat pandoc = do
                        (T.pack writeResult)
                        (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
   -- TODO handle error cases properly
+  let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
   traverse_ (either writeShow pageRedirect) errorOrResponse
+  return pageId
+  where
+    getPageId :: A.Value -> Maybe PageId
+    getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
 
 writeShow :: Show a => a -> AppHandler ()
 writeShow = writeText . T.pack . show
 
 -- TODO handle error cases properly
 pageRedirect :: A.Value -> AppHandler ()
-pageRedirect o = maybe (redirect "/create") jsRedirect wu
+pageRedirect o = do
+  maybe (writeText "Sorry, your upload failed") jsRedirect wu
   where
     links = o ^? A.key "_links"
     link s = links ^? folded . A.key s . A._String
