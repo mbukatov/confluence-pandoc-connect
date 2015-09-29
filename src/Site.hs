@@ -14,35 +14,38 @@ import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
-import qualified Data.Aeson                        as A
-import qualified Data.Aeson.Lens                   as A
-import qualified Data.ByteString                   as BS
-import qualified Data.ByteString.Char8             as BC
-import qualified Data.ByteString.Lazy              as LBS
-import qualified Data.CaseInsensitive              as CI
-import           Data.Foldable                     (traverse_)
+import qualified Data.Aeson                            as A
+import qualified Data.Aeson.Lens                       as A
+import qualified Data.ByteString                       as BS
+import qualified Data.ByteString.Char8                 as BC
+import qualified Data.ByteString.Lazy                  as LBS
+import qualified Data.CaseInsensitive                  as CI
+import           Data.Foldable                         (traverse_)
 import           Data.Maybe
 import           Data.Monoid
-import qualified Data.Text                         as T
-import qualified Data.Text.Encoding                as E
-import           Data.Text.Lens                    (unpacked)
-import           Data.Version                      (showVersion)
+import qualified Data.Text                             as T
+import qualified Data.Text.Encoding                    as E
+import           Data.Text.Lens                        (unpacked)
+import           Data.Version                          (showVersion)
 import           Heist
-import qualified Heist.Interpreted                 as I
+import qualified Heist.Interpreted                     as I
 import           Key
 import           LifecycleHandlers
+import           Network.HTTP.Client                   (RequestBody (..),
+                                                        requestBody)
+import           Network.HTTP.Client.MultipartFormData as MFD
 import           Network.HTTP.Types.Header
 import           Page
-import           Paths_confluence_pandoc_connect   (version)
+import           Paths_confluence_pandoc_connect       (version)
 import           Prelude
 import           Snap.AtlassianConnect
-import qualified Snap.AtlassianConnect.HostRequest as HR
+import qualified Snap.AtlassianConnect.HostRequest     as HR
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
 import           Snap.Util.FileUploads
-import           System.Environment                (getEnv)
+import           System.Environment                    (getEnv)
 import           TenantJWT
 import           Text.Pandoc
 import           Text.Pandoc.MediaBag
@@ -124,15 +127,19 @@ convertFile filename fileContent = do
         errorOrReadResult
 
 uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) =
-  with connect $ HR.hostPostRequest tenant (BC.pack attachmentUrl) []
-                    $ HR.addHeader (hContentType, "multipart/form-data") <>
+uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
+  boundary <- liftIO webkitBoundary
+  body <- liftIO $ renderParts boundary parts
+  let request = HR.hostPostRequest tenant (BC.pack attachmentUrl) []
+                    $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
                       HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
-                      HR.setPostParams postParams
+                      Endo (\r -> r { requestBody = body })
+  with connect request
   where
     attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/child/attachment"
     allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
-    postParams = map (\ (path, mime, content) -> (BC.pack path, LBS.toStrict content)) allFiles
+    partTransform (path, mime, content) = (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
+    parts = map partTransform allFiles
 
 createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey (tenant, maybeUser) = do
