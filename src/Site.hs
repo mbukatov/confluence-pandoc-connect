@@ -112,7 +112,7 @@ convertFile filename fileContent = do
     runReader (StringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read . BC.unpack $ fileContent
-      either (readFailed . show) ((\_ -> return ()) <$> writeConfluenceStorageFormat) errorOrReadResult
+      either (readFailed . show) (void . writeConfluenceStorageFormat) errorOrReadResult
     runReader (ByteStringReader readerF) = do
       let read = readerF def
       errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
