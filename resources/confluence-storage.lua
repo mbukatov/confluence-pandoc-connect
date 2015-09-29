@@ -128,11 +128,11 @@ function Link(s, src, tit)
 end
 
 function imageRi(path)
-  if string.find(path, "^http") then
-    return "<ri:url ri:value='" .. escape(path, true) .. "' />"
-  else
+  if string.find(path, "^media/") then
     local _, _, _, name = string.find(path, "(.*/)(.*)$")
     return "<ri:attachment ri:filename='" .. escape(name, true) .. "' />"
+  else
+    return "<ri:url ri:value='" .. escape(path, true) .. "' />"
   end
 end
 
