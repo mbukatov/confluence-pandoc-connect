@@ -28,12 +28,8 @@ echo "Install the very latest npm using npm."
 npm install npm@2
 ln -s ./node_modules/npm/bin/npm .
 
-echo "Setting the npm registry to use the atlassian registry."
-./npm config set registry=https://npm.atlassian.io
-
 echo "Logging into the NPM registry with EACJ credentials: $EACJ_USER"
 cat > ~/.npmrc <<RAWDOC
-registry=https://npm.atlassian.io/
 @atlassian:registry=https://npm-private.atlassian.io/
 //npm-private.atlassian.io/:_authToken=$NPM_AUTH_TOKEN
 RAWDOC
