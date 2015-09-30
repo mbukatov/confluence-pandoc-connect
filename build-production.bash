@@ -13,7 +13,7 @@ echo "## Building code in image: $IMAGE_BUILD_TAG"
 ${DOCKER_CMD} build --rm=true --tag="$IMAGE_BUILD_TAG" "${DIR}"
 echo "## Built code in image: $IMAGE_BUILD_TAG"
 echo "## Generating service descriptor for version $IMAGE_TAG"
-RELEASE_VERSION=${IMAGE_TAG} bash generate-service-descriptor.bash
+RELEASE_VERSION=${IMAGE_TAG} runhaskell generate-service-descriptor.hs
 echo "## Building production image: $IMAGE_TAG"
 bash to-production.bash "$IMAGE_BUILD_TAG" "$IMAGE_TAG"
 echo "## Built production image: $IMAGE_TAG"
