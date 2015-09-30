@@ -10,7 +10,7 @@ IMAGE_BUILD_TAG="${IMAGE_TAG}-build"
 DOCKER_CMD=${DOCKER_CMD:-docker}
 
 echo "## Building code in image: $IMAGE_BUILD_TAG"
-${DOCKER_CMD} build --rm=true --tag="$IMAGE_BUILD_TAG" "${DIR}"
+${DOCKER_CMD} build --rm=true --tag="$IMAGE_BUILD_TAG" ${DOCKER_EXTRA_ARGS} "${DIR}"
 echo "## Built code in image: $IMAGE_BUILD_TAG"
 echo "## Generating service descriptor for version $IMAGE_TAG"
 RELEASE_VERSION=${IMAGE_TAG} runhaskell generate-service-descriptor.hs
