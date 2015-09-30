@@ -49,7 +49,8 @@ importDocumentMenuItem = WebItem
   , wiTarget = Just $ TargetDialog Nothing
   , wiStyleClasses = []
   , wiContext = Just AddonContext
-  , wiConditions = [ SingleCondition (StaticConfluenceCondition CreateContentConfluenceCondition) False (HM.singleton "content" "page") ]
+  --, wiConditions = [ SingleCondition (StaticConfluenceCondition CreateContentConfluenceCondition) False (HM.singleton "content" "page") ]
+  , wiConditions = []
   , wiParams = noParams
   }
   where
