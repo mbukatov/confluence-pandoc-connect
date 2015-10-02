@@ -39,16 +39,27 @@ import           Text.Pandoc
 import           Text.Pandoc.MediaBag
 import           WithToken
 
+baseUrlFromTenant :: Tenant -> T.Text
+baseUrlFromTenant = T.pack . show . getURI . baseUrl
+
 renderFileForm :: PageToken -> TenantWithUser -> AppHandler ()
 renderFileForm token (tenant, _) = do
   connectData <- getConnect
   let
-    productBaseUrl = T.pack $ show $ getURI $ baseUrl tenant
     connectPageToken = E.decodeUtf8 $ encryptPageToken (connectAES connectData) token
     splices = do
-      "productBaseUrl" ## productBaseUrl
+      "productBaseUrl" ## baseUrlFromTenant tenant
       "connectPageToken" ## connectPageToken
   heistLocal (I.bindStrings splices) $ render "file_form"
+
+renderErrorPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler ()
+renderErrorPage title content (tenant, _) =
+  heistLocal (I.bindStrings splices) $ render "error_page"
+  where
+    splices = do
+      "productBaseUrl" ## baseUrlFromTenant tenant
+      "errorTitle" ## title
+      "errorContent" ## content
 
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
@@ -76,8 +87,10 @@ convertFileFromFormData = do
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
-  either readFailed runReader $ readerFromFilename filename
+  either (\_ -> fromJust <$> noReaderFound) runReader $ readerFromFilename filename
   where
+    noReaderFound = tenantFromToken $ renderErrorPage "Unsupported file format" "Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup."
+
     readFailed errorString = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS $ BC.pack errorString

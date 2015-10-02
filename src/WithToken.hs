@@ -48,9 +48,6 @@ tenantFromToken tenantApply = do
                else do
                  SH.respondWithError SH.unauthorised "Your token has expired. Please refresh the page."
                  return Nothing
-    Just _ -> do
-      SH.respondWithError SH.badRequest "Too many page tokens were provided in the headers. Did not know which one to choose. Invalid request."
-      return Nothing
 
 lookupTenantWithPageToken :: AC.PageToken -> AppHandler (Maybe AC.TenantWithUser)
 lookupTenantWithPageToken pageToken =
