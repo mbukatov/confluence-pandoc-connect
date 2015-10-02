@@ -7,5 +7,6 @@
    </script>
  </head>
  <body>
+   Redirecting...
  </body>
 </html>

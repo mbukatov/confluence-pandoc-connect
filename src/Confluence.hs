@@ -81,9 +81,7 @@ convertFileFromFormData = do
               )
               errorOrFilePath
         else return Nothing
-    uploadFailed = do
-      putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
-      writeBS "File upload failed"
+    uploadFailed = fromJust <$> tenantFromToken (renderErrorPage "Upload failed" "Uploading your file to the importer failed. Please try again.")
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
@@ -161,13 +159,14 @@ writeConfluenceStorageFormat pandoc = do
 -- TODO handle error cases properly
 pageRedirect :: A.Value -> AppHandler ()
 pageRedirect o =
-  maybe (writeText "Sorry, your upload failed") jsRedirect wu
+  maybe noLinkFound jsRedirect wu
   where
     links = o ^? A.key "_links"
     link s = links ^? folded . A.key s . A._String
     wu = link "base" <> link "webui"
     jsRedirect d =
       heistLocal (I.bindStrings $ "destination" ## d) $ render "page_redirect_dialog"
+    noLinkFound = fromJust <$> tenantFromToken (renderErrorPage "Redirect failed" "We couldn't figure out where Confluence created your page, please close the dialog manually.")
 
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
