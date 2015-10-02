@@ -72,11 +72,6 @@ renderFileForm token (tenant, _) = do
       "connectPageToken" ## connectPageToken
   heistLocal (I.bindStrings splices) $ render "file_form"
 
-withTokenAndTenant :: (PageToken -> TenantWithUser -> AppHandler ()) -> AppHandler ()
-withTokenAndTenant processor = withTenant $ \ct -> do
-  token <- liftIO $ generateTokenCurrentTime ct
-  processor token ct
-
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler

@@ -1,17 +1,17 @@
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module WithToken where
 
-import           Control.Applicative ((<$>))
 import           Control.Monad.IO.Class (liftIO)
-import qualified Snap.AtlassianConnect as AC
-import qualified Data.ByteString.Char8 as BSC
-import qualified Data.CaseInsensitive as DC
-import qualified Data.Time.Clock as DTC
+import qualified Data.ByteString.Char8  as BSC
+import qualified Data.CaseInsensitive   as DC
+import qualified Data.Time.Clock        as DTC
 import qualified Persistence.PostgreSQL as PP
-import qualified Persistence.Tenant as TN
-import qualified Snap.Core as SC
-import qualified SnapHelpers as SH
+import qualified Persistence.Tenant     as TN
+import qualified Snap.AtlassianConnect  as AC
+import qualified Snap.Core              as SC
+import qualified SnapHelpers            as SH
+import           TenantJWT              (withTenant)
 
 import           Application
 
@@ -57,5 +57,11 @@ lookupTenantWithPageToken pageToken =
   PP.withConnection $ \conn ->
     fmap (flip (,) (AC.pageTokenUser pageToken)) <$> TN.lookupTenant conn (AC.pageTokenHost pageToken)
 
+withTokenAndTenant :: (AC.PageToken -> AC.TenantWithUser -> AppHandler ()) -> AppHandler ()
+withTokenAndTenant processor = withTenant $ \ct -> do
+  token <- liftIO $ AC.generateTokenCurrentTime ct
+  processor token ct
+
 inSecond :: b -> a -> (a, b)
 inSecond x y = (y, x)
+
