@@ -87,28 +87,29 @@ convertFileFromFormData = do
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
-  either (\_ -> fromJust <$> noReaderFound) runReader $ readerFromFilename filename
+  either (const noReaderFound) runReader $ readerFromFilename filename
   where
-    noReaderFound = tenantFromToken $ renderErrorPage "Unsupported file format" "Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup."
-
-    readFailed errorString = do
-      putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
-      writeBS $ BC.pack errorString
+    noReaderFound = fromJust <$> tenantFromToken (renderErrorPage "Unsupported file format" "Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup.")
+    readFailed = fromJust <$> tenantFromToken (renderErrorPage "File import failed" "We couldn't understand your file :(")
+    pageCreateFailed = fromJust <$> tenantFromToken (renderErrorPage "File import failed" "Couldn't create a new Confluence page.")
 
     runReader (StringReader readerF) = do
       let doRead = readerF def -- def is "default"
       errorOrReadResult <- liftIO . doRead . BC.unpack $ fileContent
-      either (readFailed . show) (void . writeConfluenceStorageFormat) errorOrReadResult
+      either
+        (const readFailed)
+        (writeConfluenceStorageFormat >=> maybe pageCreateFailed (\_ -> return ()))
+        errorOrReadResult
 
     runReader (ByteStringReader readerF) = do
       let doRead = readerF def
       errorOrReadResult <- liftIO . doRead $ LBS.fromStrict fileContent
       either
-        (readFailed . show)
+        (const readFailed)
         (\(pandoc, mediaBag) -> do
              maybePageId <- writeConfluenceStorageFormat pandoc
              resp <- maybe (return Nothing) (\pageId -> tenantFromToken $ uploadMedia pageId mediaBag) maybePageId -- TODO handle attachment upload failure
-             maybe (readFailed "Could not find a created page") (either (readFailed . show) (\_ -> return ())) resp
+             maybe pageCreateFailed (either (const pageCreateFailed) (\_ -> return ())) resp
         )
         errorOrReadResult
 
@@ -152,14 +153,11 @@ writeConfluenceStorageFormat pandoc = do
                        (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
   -- TODO handle error cases properly
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
-  traverse_ (either writeShow pageRedirect) errorOrResponse
+  maybe (return ()) (either (\_ -> return ()) pageRedirect) errorOrResponse
   return pageId
   where
     getPageId :: A.Value -> Maybe PageId
     getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
-
-writeShow :: Show a => a -> AppHandler ()
-writeShow = writeText . T.pack . show
 
 -- TODO handle error cases properly
 pageRedirect :: A.Value -> AppHandler ()
