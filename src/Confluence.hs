@@ -75,27 +75,27 @@ convertFileFromFormData = do
       writeBS "File upload failed"
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
-convertFile filename fileContent = do
-  let errorOrReader = readerFromFilename filename
-  either readFailed runReader errorOrReader
+convertFile filename fileContent =
+  either readFailed runReader $ readerFromFilename filename
   where
     readFailed errorString = do
       putResponse $ setResponseCode 400 $ setContentType "text/plain" emptyResponse
       writeBS $ BC.pack errorString
+
     runReader (StringReader readerF) = do
-      let read = readerF def
-      errorOrReadResult <- liftIO . read . BC.unpack $ fileContent
+      let doRead = readerF def -- def is "default"
+      errorOrReadResult <- liftIO . doRead . BC.unpack $ fileContent
       either (readFailed . show) (void . writeConfluenceStorageFormat) errorOrReadResult
+
     runReader (ByteStringReader readerF) = do
-      let read = readerF def
-      errorOrReadResult <- liftIO . read $ LBS.fromStrict fileContent
+      let doRead = readerF def
+      errorOrReadResult <- liftIO . doRead $ LBS.fromStrict fileContent
       either
         (readFailed . show)
         (\(pandoc, mediaBag) -> do
-             pageId <- fromJust <$> writeConfluenceStorageFormat pandoc
-             resp <- tenantFromToken $ uploadMedia pageId mediaBag -- TODO handle attachment upload failure
-             logError . BC.pack $ "upload reponse: " ++ show resp
-             return ()
+             maybePageId <- writeConfluenceStorageFormat pandoc
+             resp <- maybe (return Nothing) (\pageId -> tenantFromToken $ uploadMedia pageId mediaBag) maybePageId -- TODO handle attachment upload failure
+             maybe (readFailed "Could not find a created page") (either (readFailed . show) (\_ -> return ())) resp
         )
         errorOrReadResult
 
@@ -111,7 +111,8 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
   where
     attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/child/attachment"
     allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
-    partTransform (path, mime, content) = (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
+    partTransform (path, mime, content) =
+      (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
     parts = map partTransform allFiles
 
 createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
