@@ -12,44 +12,22 @@ import           Application
 import           AtlassianConnect
 import           Confluence
 import           Control.Applicative
-import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
-import qualified Data.Aeson                            as A
-import qualified Data.Aeson.Lens                       as A
-import qualified Data.ByteString                       as BS
-import qualified Data.ByteString.Char8                 as BC
-import qualified Data.ByteString.Lazy                  as LBS
-import qualified Data.CaseInsensitive                  as CI
-import           Data.Foldable                         (traverse_)
+import qualified Data.ByteString                 as BS
+import qualified Data.ByteString.Char8           as BC
 import           Data.Maybe
-import           Data.Monoid
-import qualified Data.Text                             as T
-import qualified Data.Text.Encoding                    as E
-import           Data.Text.Lens                        (unpacked)
-import           Data.Version                          (showVersion)
-import           Heist
-import qualified Heist.Interpreted                     as I
-import           Key
+import qualified Data.Text                       as T
+import           Data.Version                    (showVersion)
 import           LifecycleHandlers
-import           Network.HTTP.Client                   (RequestBody (..),
-                                                        requestBody)
-import           Network.HTTP.Client.MultipartFormData as MFD
-import           Network.HTTP.Types.Header
-import           Page
-import           Paths_confluence_pandoc_connect       (version)
+import           Paths_confluence_pandoc_connect (version)
 import           Prelude
 import           Snap.AtlassianConnect
-import qualified Snap.AtlassianConnect.HostRequest     as HR
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
-import           Snap.Util.FileUploads
-import           System.Environment                    (getEnv)
-import           TenantJWT
-import           Text.Pandoc
-import           Text.Pandoc.MediaBag
+import           System.Environment              (getEnv)
 import           WithToken
 
 heartbeatRequest :: AppHandler ()
