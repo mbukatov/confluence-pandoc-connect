@@ -108,7 +108,7 @@ convertFile filename fileContent =
         (const readFailed)
         (\(pandoc, mediaBag) -> do
              maybePageId <- writeConfluenceStorageFormat pandoc
-             resp <- maybe (return Nothing) (\pageId -> tenantFromToken $ uploadMedia pageId mediaBag) maybePageId -- TODO handle attachment upload failure
+             resp <- maybe (return Nothing) (\pageId -> tenantFromToken $ uploadMedia pageId mediaBag) maybePageId
              maybe pageCreateFailed (either (const pageCreateFailed) (\_ -> return ())) resp
         )
         errorOrReadResult
@@ -151,7 +151,6 @@ writeConfluenceStorageFormat pandoc = do
                        (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
                        (T.pack writeResult)
                        (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
-  -- TODO handle error cases properly
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
   maybe (return ()) (either (\_ -> return ()) pageRedirect) errorOrResponse
   return pageId
