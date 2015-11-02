@@ -141,9 +141,7 @@ function Image(s, src, tit)
 end
 
 function CaptionedImage(src, tit, txt)
-  return "<ac:image ac:alt='" .. escape(txt, true) ..
-    "'><ri:url ri:value='" .. escape(stripAttachmentPath(src), true) ..
-    "' /></ac:image>"
+  return "<ac:image ac:alt='" .. escape(txt, true) .. "'>" .. imageRi(src) .."</ac:image>"
 end
 
 function Code(s, attr)
