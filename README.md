@@ -6,6 +6,10 @@ with the power of [Pandoc](http://pandoc.org/).
 This is an [Atlassian Connect](http://connect.atlassian.com/) add-on written in
 [Haskell](http://www.haskell.org).
 
+## Issue tracking
+
+See the [Confluence Pandoc Connect Kanban board](https://ecosystem.atlassian.net/secure/RapidBoard.jspa?rapidView=231).
+
 # Running locally for development
 
 ## Dependencies
