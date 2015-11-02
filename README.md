@@ -26,11 +26,18 @@ Set up a sandbox and install dependencies:
 
     make setup
 
+Set up a postgres database:
+
+    cd database
+    sh bootstrap.sh
+    sh init-db.sh
+
 Run with some local values:
 
     CONNECT_BASE_URL="http://localhost:8001" \
     PG_CONFLUENCE_PANDOC_CONNECT_URL="postgres://confluence_pandoc_connect@localhost:5432/confluence_pandoc_connect" \
     cabal run -- --port 8001 --error-log=- --access-log=-
+
 
 # Publishing a new version
 
