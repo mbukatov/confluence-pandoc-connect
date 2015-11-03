@@ -42,7 +42,7 @@ importDocumentMenuItem = WebItem
   { wiKey = suffix "import-document"
   , wiName = simpleText "Import from file"
   , wiLocation = "system.content.action"
-  , wiUrl = "/create"
+  , wiUrl = "/create?content.id={content.id}&content.type={content.type}&space.id={space.id}&space.key={space.key}"
   , wiTooltip = Nothing
   , wiIcon = Nothing
   , wiWeight = Nothing
