@@ -31,9 +31,6 @@ instance ToJSON Space where
 newtype Body = Body T.Text
   deriving (Generic, Eq, Show)
 
-newtype User = User (Key User)
-  deriving (Generic, Eq, Show)
-
 instance ToJSON PageDetails where
   toJSON pd = object
     [ "type" .= (map toLower . show $ pageType pd)
