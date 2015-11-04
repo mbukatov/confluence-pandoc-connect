@@ -27,7 +27,7 @@ addonDescriptor =
     , modules = Just $ Modules emptyJIRAModules emptyConfluenceModules
         { confluenceWebItems = Just [importDocumentMenuItem]
         }
-    , scopes = Just [Read, Write]
+    , scopes = Just [Read, Write, SpaceAdmin]
     , enableLicensing = Just False
     }
   where
