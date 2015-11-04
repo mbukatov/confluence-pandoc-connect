@@ -47,8 +47,6 @@ renderFileForm :: PageToken -> TenantWithUser -> AppHandler ()
 renderFileForm token (tenant, _) = do
   connectData <- getConnect
   contentId <- paramValueFromUrl "content.id"
-  contentType <- paramValueFromUrl "content.type"
-  spaceId <- paramValueFromUrl "space.id"
   spaceKey <- paramValueFromUrl "space.key"
   let
     connectPageToken = E.decodeUtf8 $ encryptPageToken (connectAES connectData) token
@@ -56,8 +54,6 @@ renderFileForm token (tenant, _) = do
       "productBaseUrl" ## baseUrlFromTenant tenant
       "connectPageToken" ## connectPageToken
       "contentId" ## contentId
-      "contentType" ## contentType
-      "spaceId" ## spaceId
       "spaceKey" ## spaceKey
   heistLocal (I.bindStrings splices) $ render "file_form"
   where
