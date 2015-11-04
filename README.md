@@ -52,3 +52,9 @@ Ensure that the correct environment variables are set for load-and-push-docker
 ## Sequence to release new version
 
     micros service:deploy -v -e ddev -f service-descriptor.json confluence-pandoc-connect
+
+# Micros
+
+## Environment variables
+
+The values `CONNECT_SECRET_KEY` and `CONNECT_BASE_URL` are set in Micros environments that we deploy to using `micros stash:set`.
