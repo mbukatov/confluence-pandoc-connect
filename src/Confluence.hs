@@ -31,7 +31,8 @@ import           Page
 import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest     as HR
-import           Snap.Core
+import           Snap.Core                             as SC
+import qualified SnapHelpers                           as SH
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Util.FileUploads
@@ -45,12 +46,26 @@ baseUrlFromTenant = T.pack . show . getURI . baseUrl
 renderFileForm :: PageToken -> TenantWithUser -> AppHandler ()
 renderFileForm token (tenant, _) = do
   connectData <- getConnect
+  contentId <- paramValueFromUrl "content.id"
+  contentType <- paramValueFromUrl "content.type"
+  spaceId <- paramValueFromUrl "space.id"
+  spaceKey <- paramValueFromUrl "space.key"
   let
     connectPageToken = E.decodeUtf8 $ encryptPageToken (connectAES connectData) token
     splices = do
       "productBaseUrl" ## baseUrlFromTenant tenant
       "connectPageToken" ## connectPageToken
+      "contentId" ## contentId
+      "contentType" ## contentType
+      "spaceId" ## spaceId
+      "spaceKey" ## spaceKey
   heistLocal (I.bindStrings splices) $ render "file_form"
+  where
+    paramValueFromUrl name = do
+      maybeValue <- SC.getParam name
+      case maybeValue of
+        Nothing -> fail "Required parameter missing"
+        Just paramValue -> return $ SH.byteStringToText paramValue
 
 renderErrorPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler ()
 renderErrorPage title content (tenant, _) =
