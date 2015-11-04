@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | This module is where all the routes and handlers are defined for your
 -- site. The 'app' function is the initializer that combines everything
@@ -14,26 +15,26 @@ import           Confluence
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
-import qualified Data.ByteString                 as BS
-import qualified Data.ByteString.Char8           as BC
+import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Char8         as BC
 import           Data.Maybe
-import qualified Data.Text                       as T
-import           Data.Version                    (showVersion)
+import qualified Data.Text                     as T
+import           Data.Version                  (showVersion)
+import           Development.GitRev            (gitHash)
 import           LifecycleHandlers
-import           Paths_confluence_pandoc_connect (version)
 import           Prelude
 import           Snap.AtlassianConnect
 import           Snap.Core
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
-import           System.Environment              (getEnv)
+import           System.Environment            (getEnv)
 import           WithToken
 
 heartbeatRequest :: AppHandler ()
 heartbeatRequest = do
   putResponse $ setResponseCode 200 emptyResponse
-  writeText . T.pack $ showVersion version
+  writeText $(gitHash)
 
 handleCreateRequest :: AppHandler ()
 handleCreateRequest =
