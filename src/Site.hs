@@ -18,10 +18,9 @@ import           Control.Monad.IO.Class
 import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Char8         as BC
 import           Data.Maybe
-import qualified Data.Text                     as T
-import           Data.Version                  (showVersion)
 import           Development.GitRev            (gitHash)
 import           LifecycleHandlers
+import qualified MicrosZone                    as MZ
 import           Prelude
 import           Snap.AtlassianConnect
 import           Snap.Core
@@ -58,7 +57,9 @@ app = makeSnaplet "confluence-pandoc-connect" "CPC connect application" Nothing 
     h <- nestSnaplet "" heist $ heistInit "templates"
     dbConfig <- liftIO dbConfigFromEnv
     db' <- nestSnaplet "db" db $ pgsInit' dbConfig
-    ac <- nestSnaplet "connect" connect $ initConnectSnaplet addonDescriptor
+    zone <- liftIO MZ.fromEnv
+    let descriptorWithZone = MZ.modifyDescriptorUsingZone zone addonDescriptor
+    ac <- nestSnaplet "connect" connect $ initConnectSnaplet descriptorWithZone
     addRoutes routes
     return $ App h db' ac
 
