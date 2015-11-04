@@ -11,6 +11,7 @@
              </div>
          </div>
         <form id="file-form" class="aui" enctype="multipart/form-data" action="/create" method="post">
+            <input type="hidden" id="current-space-key" value="${spaceKey}">
             <input type="hidden" name="page-token" value="${connectPageToken}">
             <fieldset>
                <legend><span>File upload</span></legend>
@@ -50,6 +51,7 @@
            success: function(responseText) {
              var results = JSON.parse(responseText).results,
                  select = document.getElementById('space-key'),
+                 currentSpaceKey = document.getElementById('current-space-key').value,
                  option,
                  i;
 
@@ -57,6 +59,9 @@
                option = document.createElement('option');
                option.value = results[i].key;
                option.text = results[i].name;
+               if(results[i].key == currentSpaceKey) {
+                   option.selected = 'selected';
+               }
                select.add(option);
              }
            }
