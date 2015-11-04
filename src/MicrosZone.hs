@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings   #-}
+
 module MicrosZone
     ( Zone(..)
     , zoneFromString
@@ -42,12 +44,12 @@ modifyDescriptorUsingZone potentialZone descriptor = descriptor
     }
 
 nameKeyAppend :: Maybe Zone -> T.Text
-nameKeyAppend (Just Prod)   = T.empty
+nameKeyAppend (Just Prod)   = ""
 nameKeyAppend (Just zone)   = T.pack $ " (" ++ show zone ++ ")"
-nameKeyAppend Nothing       = T.pack " (Local)"
+nameKeyAppend Nothing       = " (Local)"
 
 zoneKeyAppend :: Maybe Zone -> T.Text
-zoneKeyAppend (Just Prod)   = T.empty
-zoneKeyAppend (Just Dog)    = T.pack ".dog"
-zoneKeyAppend (Just Dev)    = T.pack ".dev"
-zoneKeyAppend Nothing       = T.pack ".local"
+zoneKeyAppend (Just Prod)   = ""
+zoneKeyAppend (Just Dog)    = ".dog"
+zoneKeyAppend (Just Dev)    = ".dev"
+zoneKeyAppend Nothing       = ".local"
