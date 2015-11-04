@@ -1,20 +1,19 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Page where
+module ConfluenceTypes where
 
 import           Data.Aeson
-import           Data.Aeson.Types
-import           Data.Char        as C
-import qualified Data.Text        as T
+import           Data.Char    as C
+import qualified Data.Text    as T
 import           GHC.Generics
 import           Key
 
 data PageDetails = PageDetails
-  { pageType  :: PageType
-  , pageTitle :: T.Text
-  , pageSpace :: Space
-  , pageBody  :: Body
+  { pageType      :: PageType
+  , pageTitle     :: T.Text
+  , pageSpace     :: Space
+  , pageBody      :: Body
   , pageAncestors :: [PageId]
   }
 
@@ -27,7 +26,7 @@ data PageType = Page | Blogpost
 newtype Space = Space (Key Space)
   deriving (Generic, Eq, Show)
 instance ToJSON Space where
-  toJSON (Page.Space (Key k))= object ["key" .= toJSON k]
+  toJSON (ConfluenceTypes.Space (Key k))= object ["key" .= toJSON k]
 
 newtype Body = Body T.Text
   deriving (Generic, Eq, Show)
@@ -45,3 +44,5 @@ instance ToJSON PageDetails where
         ]
     --, "ancestors" .= toJSON (map (\(PageId i) -> object ["type" .= String "page", "id" .= Number (fromInteger i)]) $ pageAncestors pd)
     ]
+
+newtype Username = Username T.Text
