@@ -4,16 +4,16 @@
 module ConfluenceTypes where
 
 import           Data.Aeson
-import           Data.Char        as C
-import qualified Data.Text        as T
+import           Data.Char    as C
+import qualified Data.Text    as T
 import           GHC.Generics
 import           Key
 
 data PageDetails = PageDetails
-  { pageType  :: PageType
-  , pageTitle :: T.Text
-  , pageSpace :: Space
-  , pageBody  :: Body
+  { pageType      :: PageType
+  , pageTitle     :: T.Text
+  , pageSpace     :: Space
+  , pageBody      :: Body
   , pageAncestors :: [PageId]
   }
 
@@ -44,3 +44,5 @@ instance ToJSON PageDetails where
         ]
     --, "ancestors" .= toJSON (map (\(PageId i) -> object ["type" .= String "page", "id" .= Number (fromInteger i)]) $ pageAncestors pd)
     ]
+
+newtype Username = Username T.Text

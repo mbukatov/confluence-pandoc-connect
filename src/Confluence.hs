@@ -65,7 +65,13 @@ renderErrorPage title content (tenant, _) =
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler
-  maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
+
+  maybeSpaceKey <- getParam "space-key"
+  let maybeSpaceKey' = ConfluenceTypes.Space . Key . E.decodeUtf8 <$> maybeSpaceKey
+  canCreate <- maybe (fail "No space key?!") (tenantFromToken . userCanCreatePage) maybeSpaceKey'
+  if fromMaybe False canCreate
+     then maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
+     else noPermission
   where
     uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
     maxFileSize = 100000000 -- 100 MB
@@ -83,6 +89,7 @@ convertFileFromFormData = do
               errorOrFilePath
         else return Nothing
     uploadFailed = fromJust <$> tenantFromToken (renderErrorPage "Upload failed" "Uploading your file to the importer failed. Please try again.")
+    noPermission = fromJust <$> tenantFromToken (renderErrorPage "Couldn't create page" "You don't have permission to create a new page in this space. If you think you should, please contact your administrator.")
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
