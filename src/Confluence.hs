@@ -4,6 +4,7 @@
 module Confluence where
 
 import           Application
+import           ConfluenceTypes
 import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
@@ -22,12 +23,12 @@ import qualified Data.Text.Encoding                    as E
 import           Data.Text.Lens                        (unpacked)
 import           Heist
 import qualified Heist.Interpreted                     as I
+import           JsonRpc
 import           Key
 import           Network.HTTP.Client                   (RequestBody (..),
                                                         requestBody)
 import           Network.HTTP.Client.MultipartFormData as MFD
 import           Network.HTTP.Types.Header
-import           Page
 import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest     as HR
@@ -127,7 +128,7 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
       (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
     parts = map partTransform allFiles
 
-createPage :: T.Text -> T.Text -> Page.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey (tenant, maybeUser) = do
   let requestBody = A.encode PageDetails
                       { pageType = Page
@@ -148,7 +149,7 @@ writeConfluenceStorageFormat pandoc = do
   errorOrResponse <- tenantFromToken $ createPage
                        (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
                        (T.pack writeResult)
-                       (Page.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
+                       (ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
   maybe (return ()) (either (\_ -> return ()) pageRedirect) errorOrResponse
   return pageId
