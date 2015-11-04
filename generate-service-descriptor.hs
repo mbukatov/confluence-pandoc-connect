@@ -20,7 +20,7 @@ serviceDescriptor version = "{\n\
 \         \"uri\": \"rest/heartbeat\"\n\
 \      },\n\
 \      \"source\": {\n\
-\         \"url\": \"https://stash.atlassian.com/users/aknoll/repos/pandoc-connect\"\n\
+\         \"url\": \"https://bitbucket.org/atlassianlabs/confluence-pandoc-connect\"\n\
 \      }\n\
 \   },\n\
 \   \"owners\": [\n\
