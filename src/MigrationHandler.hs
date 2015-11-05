@@ -94,6 +94,7 @@ flywayOptionsToArguments fo =
    , "-user=" ++ flywayUser fo
    , "-password=" ++ flywayPassword fo
    , "-target=" ++ (show . flywayTarget $ fo)
+   , "-initOnMigrate=true"
    ]
 
 getKeyAndConfirm :: AppHandler () -> MigrationKey -> AppHandler ()
