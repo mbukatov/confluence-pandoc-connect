@@ -18,13 +18,16 @@ data Zone = Dev | Dog | Prod
    deriving(Eq, Show, Ord)
 
 zoneFromString :: String -> Maybe Zone
+-- Development environments
 zoneFromString "domain.dev.atlassian.io" = Just Dev
-zoneFromString "application.dev.atlassian.io" = Just Dev
-zoneFromString "platform.dev.atlassian.io" = Just Dev
+-- Dogfooding environments
+zoneFromString "app.dev.atlassian.io" = Just Dog
 zoneFromString "useast.staging.atlassian.io" = Just Dog
 zoneFromString "uswest.staging.atlassian.io"  = Just Dog
+-- Production environments
 zoneFromString "useast.atlassian.io" = Just Prod
 zoneFromString "uswest.atlassian.io"  = Just Prod
+
 zoneFromString _        = Nothing
 
 fromEnv :: IO (Maybe Zone)
