@@ -21,6 +21,7 @@ import           Data.Maybe
 import           Development.GitRev            (gitHash)
 import           LifecycleHandlers
 import qualified MicrosZone                    as MZ
+import           MigrationHandler
 import           Prelude
 import           Snap.AtlassianConnect
 import           Snap.Core
@@ -44,8 +45,9 @@ handleCreateRequest =
 routes, applicationRoutes :: [(BS.ByteString, AppHandler ())]
 routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
-  [ ("rest/heartbeat", heartbeatRequest)
-  , ("/create", handleCreateRequest)
+  [ ("/rest/heartbeat", heartbeatRequest)
+  , ("/rest/migration", migrationRequest)
+  , ("/create",         handleCreateRequest)
   ]
 
 dbConfigFromEnv :: IO PGSConfig

@@ -28,7 +28,7 @@ Set up a sandbox and install dependencies:
 
 Set up a postgres database:
 
-    cd database
+    cd migrations 
     sh bootstrap.sh
     sh init-db.sh
 
