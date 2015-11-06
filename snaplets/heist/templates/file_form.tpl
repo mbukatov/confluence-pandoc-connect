@@ -40,7 +40,6 @@
                      <span class="aui-icon icon-required">(required)</span></label>
                  <input class="text" type="text"
                         id="page-title" name="page-title" placeholder="">
-                 <div class="description">The title for the page.</div>
              </div>
          </form>
      </section>
