@@ -6,8 +6,6 @@
  </head>
  <body>
      <section id="content" class="ac-content">
-         <p>Please select the file to import and where it should go.</p>
-
          <form id="file-form" class="aui" enctype="multipart/form-data" action="/create" method="post">
              <input type="hidden" name="page-token" value="${connectPageToken}">
              <input type="hidden" id="current-space-key" value="${spaceKey}">
