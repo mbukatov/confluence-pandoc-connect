@@ -146,13 +146,16 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
       (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
     parts = map partTransform allFiles
 
-createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-createPage filename fileContent spaceKey (tenant, maybeUser) = do
+createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+createPage filename fileContent spaceKey maybePageId (tenant, maybeUser) = do
   let requestBody = A.encode PageDetails
                       { pageType = Page
                       , pageTitle = filename
                       , pageSpace = spaceKey
                       , pageBody = Body fileContent
+                      , pageAncestors = case maybePageId of
+                          Nothing -> []
+                          Just x -> [x]
                       }
   with connect $ HR.hostPostRequest tenant "/rest/api/content" []
                        $ HR.setBody (LBS.toStrict requestBody) <>
@@ -162,18 +165,28 @@ writeConfluenceStorageFormat :: Pandoc -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat pandoc = do
   maybePageTitle <- getParam "page-title"
   maybeSpaceKey <- getParam "space-key"
+  maybePageIdParam <- getParam "page-selectors"
+  let maybePageId = parsePageIdParam maybePageIdParam
   writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
   errorOrResponse <- tenantFromToken $ createPage
                        (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
                        (T.pack writeResult)
                        (ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
+                       maybePageId
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
   maybe (return ()) (either (\_ -> return ()) pageRedirect) errorOrResponse
   return pageId
   where
     getPageId :: A.Value -> Maybe PageId
     getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
+    parsePageIdParam :: Maybe BC.ByteString -> Maybe PageId
+    parsePageIdParam x = case x of
+      Just "root" -> Nothing
+      Just x -> case BC.readInteger x of
+        Nothing -> Nothing
+        Just (i, _) -> Just $ PageId i
+      Nothing -> Nothing
 
 -- TODO handle error cases properly
 pageRedirect :: A.Value -> AppHandler ()
