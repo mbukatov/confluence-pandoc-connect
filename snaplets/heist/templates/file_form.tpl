@@ -36,10 +36,11 @@
                  </fieldset>
              </div>
              <div class="field-group">
-                 <label for="page-title">Page title</label>
+                 <label for="page-title">Page title
+                     <span class="aui-icon icon-required">(required)</span></label>
                  <input class="text" type="text"
                         id="page-title" name="page-title" placeholder="">
-                 <div class="description">An optional title for the page.</div>
+                 <div class="description">The title for the page.</div>
              </div>
          </form>
      </section>
