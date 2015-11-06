@@ -42,7 +42,7 @@ instance ToJSON PageDetails where
           , "representation" .= String "storage"
           ]
         ]
-    --, "ancestors" .= toJSON (map (\(PageId i) -> object ["type" .= String "page", "id" .= Number (fromInteger i)]) $ pageAncestors pd)
+    , "ancestors" .= toJSON (map (\(PageId i) -> object ["type" .= String "page", "id" .= Number (fromInteger i)]) $ pageAncestors pd)
     ]
 
 newtype Username = Username T.Text
