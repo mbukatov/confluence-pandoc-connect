@@ -39,6 +39,14 @@ local function attributes(attr)
   return table.concat(attr_table)
 end
 
+local function anchor(id)
+  if id ~= "" then
+    return '<ac:structured-macro ac:name="anchor"><ac:parameter ac:name="">' .. id .. '</ac:parameter></ac:structured-macro>'
+  else
+    return ""
+  end
+end
+
 -- Run cmd on a temporary file containing inp and return result.
 local function pipe(cmd, inp)
   local tmp = os.tmpname()
@@ -124,7 +132,11 @@ function Strikeout(s)
 end
 
 function Link(s, src, tit)
-  return "<a href='" .. escape(src, true) .. "'>" .. s .. "</a>"
+  if string.find(src, "^#") then
+    return '<ac:link ac:anchor="' .. string.sub(src, 2) .. '"><ac:link-body>' .. s .. '</ac:link-body></ac:link>'
+  else
+    return "<a href='" .. escape(src, true) .. "'>" .. s .. "</a>"
+  end
 end
 
 function imageRi(path)
@@ -145,7 +157,7 @@ function CaptionedImage(src, tit, txt)
 end
 
 function Code(s, attr)
-  return "<code" .. attributes(attr) .. ">" .. escape(s) .. "</code>"
+  return anchor(attr.id) .. "<code" .. attributes(attr) .. ">" .. escape(s) .. "</code>"
 end
 
 function InlineMath(s)
@@ -156,6 +168,7 @@ function DisplayMath(s)
   return "\\[" .. escape(s) .. "\\]"
 end
 
+-- TODO use anchors for footnote references
 function Note(s)
   local num = #notes + 1
   -- insert the back reference right before the final closing tag.
@@ -169,7 +182,7 @@ function Note(s)
 end
 
 function Span(s, attr)
-  return "<span" .. attributes(attr) .. ">" .. s .. "</span>"
+  return anchor(attr.id) .. "<span" .. attributes(attr) .. ">" .. s .. "</span>"
 end
 
 function Cite(s, cs)
@@ -191,7 +204,7 @@ end
 
 -- lev is an integer, the header level.
 function Header(lev, s, attr)
-  return "<h" .. lev .. attributes(attr) ..  ">" .. s .. "</h" .. lev .. ">"
+  return  anchor(attr.id) .. "<h" .. lev .. attributes(attr) ..  ">" .. s .. "</h" .. lev .. ">"
 end
 
 function BlockQuote(s)
@@ -207,10 +220,10 @@ function CodeBlock(s, attr)
   -- and base64, and include the base64-encoded png as a data: URL.
   if attr.class and string.match(' ' .. attr.class .. ' ',' dot ') then
     local png = pipe("base64", pipe("dot -Tpng", s))
-    return '<img src="data:image/png;base64,' .. png .. '"/>'
+    return anchor(attr.id) .. '<img src="data:image/png;base64,' .. png .. '"/>'
   -- otherwise treat as code (one could pipe through a highlighter)
   else
-    return "<ac:structured-macro ac:name='code'>" ..
+    return anchor(attr.id) .. "<ac:structured-macro ac:name='code'>" ..
       "<ac:plain-text-body><![CDATA[" .. s .. "]]></ac:plain-text-body>" ..
       "</ac:structured-macro>"
   end
@@ -305,7 +318,7 @@ function Table(caption, aligns, widths, headers, rows)
 end
 
 function Div(s, attr)
-  return "<div" .. attributes(attr) .. ">\n" .. s .. "</div>"
+  return anchor(attr.id) .. "<div" .. attributes(attr) .. ">\n" .. s .. "</div>"
 end
 
 -- The following code will produce runtime warnings when you haven't defined

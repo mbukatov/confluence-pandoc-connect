@@ -65,7 +65,8 @@ renderFileForm token (tenant, _) = do
         Just paramValue -> return $ SH.byteStringToText paramValue
 
 renderErrorPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler ()
-renderErrorPage title content (tenant, _) =
+renderErrorPage title content (tenant, _) = do
+  putResponse $ setResponseCode SH.badRequest emptyResponse
   heistLocal (I.bindStrings splices) $ render "error_page"
   where
     splices = do
