@@ -181,9 +181,7 @@ writeConfluenceStorageFormat pandoc = do
     parsePageIdParam :: Maybe BC.ByteString -> Maybe PageId
     parsePageIdParam x = case x of
       Just "root" -> Nothing
-      Just x -> case BC.readInteger x of
-        Nothing -> Nothing
-        Just (i, _) -> Just $ PageId i
+      Just x -> BC.readInteger x >>= \(i, _) -> Just $ PageId i
       Nothing -> Nothing
 
 -- TODO handle error cases properly
