@@ -1,0 +1,5 @@
+This Atlassian Connect add-on does not store any user data except for the public
+URL of your Atlassian Cloud instance.
+
+All data transmitted between the add-on, the user's web browser, and Confluence,
+is transmitted using the Secure Socket Layer protocol.
