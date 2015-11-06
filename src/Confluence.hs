@@ -179,10 +179,7 @@ writeConfluenceStorageFormat pandoc = do
     getPageId :: A.Value -> Maybe PageId
     getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
     parsePageIdParam :: Maybe BC.ByteString -> Maybe PageId
-    parsePageIdParam x = case x of
-      Just "root" -> Nothing
-      Just x -> BC.readInteger x >>= \(i, _) -> Just $ PageId i
-      Nothing -> Nothing
+    parsePageIdParam x = PageId . fst <$> (x >>= BC.readInteger)
 
 -- TODO handle error cases properly
 pageRedirect :: A.Value -> AppHandler ()
