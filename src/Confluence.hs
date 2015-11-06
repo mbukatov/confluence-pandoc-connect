@@ -153,9 +153,7 @@ createPage filename fileContent spaceKey maybePageId (tenant, maybeUser) = do
                       , pageTitle = filename
                       , pageSpace = spaceKey
                       , pageBody = Body fileContent
-                      , pageAncestors = case maybePageId of
-                          Nothing -> []
-                          Just x -> [x]
+                      , pageAncestors = maybeToList maybePageId
                       }
   with connect $ HR.hostPostRequest tenant "/rest/api/content" []
                        $ HR.setBody (LBS.toStrict requestBody) <>
