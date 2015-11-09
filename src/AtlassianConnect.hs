@@ -2,6 +2,7 @@
 
 module AtlassianConnect
   ( addonDescriptor
+  , ConnectFeatures(..)
   ) where
 
 import           Data.Connect.Descriptor
@@ -10,11 +11,15 @@ import           Data.Maybe
 import           Data.Text               as T
 import           Network.URI
 
+data ConnectFeatures = ConnectFeatures
+  { webItemDisplayEnabled :: Bool
+  }
+
 atlassianHomepage :: URI
 atlassianHomepage = fromJust $ parseURI "http://www.atlassian.com/"
 
-addonDescriptor :: Plugin
-addonDescriptor =
+addonDescriptor :: ConnectFeatures -> Plugin
+addonDescriptor cf =
   basePlugin
     { pluginName      = Just . Name $ "Confluence Pandoc Connect"
     , pluginDescription  = Just "Import files into Confluence with the Pandoc document converter."
@@ -25,7 +30,7 @@ addonDescriptor =
         }
     -- TODO add confluence webItem module once it's available post CPC-20
     , modules = Just $ Modules emptyJIRAModules emptyConfluenceModules
-        { confluenceWebItems = Just [importDocumentMenuItem]
+        { confluenceWebItems = Just [importDocumentMenuItem cf]
         }
     , scopes = Just [Read, Write, SpaceAdmin]
     , enableLicensing = Just False
@@ -37,8 +42,8 @@ addonDescriptor =
 addonKeySuffix :: Text
 addonKeySuffix = "-confluence-pandoc-connect"
 
-importDocumentMenuItem :: WebItem
-importDocumentMenuItem = WebItem
+importDocumentMenuItem :: ConnectFeatures -> WebItem
+importDocumentMenuItem cf = WebItem
   { wiKey = suffix "import-document"
   , wiName = simpleText "Import from file"
   , wiLocation = "system.content.action"
@@ -49,7 +54,9 @@ importDocumentMenuItem = WebItem
   , wiTarget = Just $ TargetDialog Nothing
   , wiStyleClasses = []
   , wiContext = Just AddonContext
-  , wiConditions = [ SingleCondition (StaticConfluenceCondition CreateContentConfluenceCondition) False (HM.singleton "content" "page") ]
+  , wiConditions = if webItemDisplayEnabled cf
+                      then [ SingleCondition (StaticConfluenceCondition CreateContentConfluenceCondition) False (HM.singleton "content" "page") ]
+                      else []
   , wiParams = noParams
   }
   where

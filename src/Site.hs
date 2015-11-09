@@ -60,7 +60,9 @@ app = makeSnaplet "confluence-pandoc-connect" "CPC connect application" Nothing 
     dbConfig <- liftIO dbConfigFromEnv
     db' <- nestSnaplet "db" db $ pgsInit' dbConfig
     zone <- liftIO MZ.fromEnv
-    let descriptorWithZone = MZ.modifyDescriptorUsingZone zone addonDescriptor
+    let
+      connectFeatures = ConnectFeatures { webItemDisplayEnabled = zone == Just MZ.Dev || isNothing zone }
+      descriptorWithZone = MZ.modifyDescriptorUsingZone zone $ addonDescriptor connectFeatures
     ac <- nestSnaplet "connect" connect $ initConnectSnaplet descriptorWithZone
     addRoutes routes
     return $ App h db' ac
