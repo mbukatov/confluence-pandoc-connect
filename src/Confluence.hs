@@ -15,7 +15,6 @@ import qualified Data.ByteString                       as BS
 import qualified Data.ByteString.Char8                 as BC
 import qualified Data.ByteString.Lazy                  as LBS
 import qualified Data.CaseInsensitive                  as CI
-import           Data.Foldable                         (traverse_)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text                             as T
@@ -25,7 +24,8 @@ import           Heist
 import qualified Heist.Interpreted                     as I
 import           JsonRpc
 import           Key
-import           Network.HTTP.Client                   (RequestBody (..),
+import           Network.HTTP.Client                   (Request,
+                                                        RequestBody (..),
                                                         requestBody)
 import           Network.HTTP.Client.MultipartFormData as MFD
 import           Network.HTTP.Types.Header
@@ -33,10 +33,10 @@ import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest     as HR
 import           Snap.Core                             as SC
-import qualified SnapHelpers                           as SH
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Util.FileUploads
+import qualified SnapHelpers                           as SH
 import           Text.Pandoc
 import           Text.Pandoc.MediaBag
 import           WithToken
@@ -135,7 +135,7 @@ uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.Pro
 uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
   boundary <- liftIO webkitBoundary
   body <- liftIO $ renderParts boundary parts
-  let request = HR.hostPostRequest tenant (BC.pack attachmentUrl) []
+  let request = hostPostRequest tenant (BC.pack attachmentUrl) []
                     $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
                       HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
                       Endo (\r -> r { requestBody = body })
@@ -156,7 +156,7 @@ createPage filename fileContent spaceKey maybePageId (tenant, maybeUser) = do
                       , pageBody = Body fileContent
                       , pageAncestors = maybeToList maybePageId
                       }
-  with connect $ HR.hostPostRequest tenant "/rest/api/content" []
+  with connect $ hostPostRequest tenant "/rest/api/content" []
                        $ HR.setBody (LBS.toStrict requestBody) <>
                          HR.addHeader (hContentType, "application/json")
 
@@ -203,3 +203,9 @@ readerFromFilename filename =
     _ -> suffix
   where
     suffix = reverse $ takeWhile ('.' /=) $ reverse filename
+
+hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
+hostPostRequest t uri auth req = HR.hostPostRequest t uri auth req >>= (\r -> logProductError r >> return r)
+  where
+    logProductError (Left err) = logError . BC.pack $ show err
+    logProductError _ = return ()
