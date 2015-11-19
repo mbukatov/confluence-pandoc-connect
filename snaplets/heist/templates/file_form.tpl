@@ -65,7 +65,7 @@
          };
 
          AP.request({
-           url: '/rest/api/space',
+           url: '/rest/api/space?limit=2147483647',
            success: function(responseText) {
              var results = JSON.parse(responseText).results,
                  option,
