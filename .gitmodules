@@ -1,3 +1,0 @@
-[submodule "submodule/atlassian-connect-descriptor"]
-	path = submodule/atlassian-connect-descriptor
-	url = git@bitbucket.org:ajknoll_atlassian/atlassian-connect-descriptor.git

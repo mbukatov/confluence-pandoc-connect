@@ -7,7 +7,6 @@ NAME="confluence-pandoc-connect"
 
 sandbox-init:
 			cabal sandbox init
-			cabal sandbox add-source submodule/atlassian-connect-descriptor
 
 dev: $(SOURCE) sandbox-init
 			cabal install -f development

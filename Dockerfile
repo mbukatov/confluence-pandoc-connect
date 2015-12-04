@@ -30,7 +30,6 @@ ENV LANG en_US.UTF-8 # See: https://github.com/haskell/cabal/issues/1883#issueco
 # production Docker image will not run a cabal install.
 RUN cabal update \
     && cabal sandbox init \
-    && cabal sandbox add-source /root/build/submodule/atlassian-connect-descriptor \
     && cabal install --force-reinstalls
 
 # Setup the default command to run for the container.
