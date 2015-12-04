@@ -1,7 +1,6 @@
-.cabal-sandbox
+.stack-work/
 .ghci
 log/
-cabal.sandbox.config
 production/to-copy
 dist/
 amps-standalone/
