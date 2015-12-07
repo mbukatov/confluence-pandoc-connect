@@ -34,7 +34,7 @@ serviceDescriptor version = "{\n\
 \      \"email\": \"aknoll@atlassian.com\"\n\
 \   },\n\
 \   \"scaling\": {\n\
-\      \"min\": 1\n\
+\      \"min\": 2\n\
 \   },\n\
 \   \"downstreamServices\": []\n\
 \}"
