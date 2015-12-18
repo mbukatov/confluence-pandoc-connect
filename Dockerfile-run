@@ -1,0 +1,16 @@
+FROM fpco/stack-run
+MAINTAINER Avi Knoll <aknoll@atlassian.com>
+
+# Expose the default port required by Micros
+EXPOSE 8080
+
+# Install Java
+RUN apt-get update && apt-get install -y openjdk-7-jre-headless
+
+# Install static files
+COPY snaplets resources migrations static /service/
+
+# Copy and run binary
+ADD .stack-work/install/x86_64-linux/lts-3.17/7.10.2/bin/confluence-pandoc-connect /usr/bin/confluence-pandoc-connect
+WORKDIR /service
+CMD ["confluence-pandoc-connect", "--access-log=-", "--error-log=stderr", "--port=8080"]

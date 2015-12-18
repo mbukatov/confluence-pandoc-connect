@@ -1,11 +1,3 @@
-# The development docker file for the Confluence Pandoc Connect Haskell project.
-# This docker file is designed to help us build the production executables but
-# should not be used to actually generate the production docker images. Instead
-# we should make a new production image that takes the executables from this
-# image and only includes them. That way we do not need to carry the entire
-# Haskell platform with us into production. Just the small set of required
-# dependencies.
-
 FROM fpco/stack-build
 MAINTAINER Avi Knoll <aknoll@atlassian.com>
 
