@@ -5,16 +5,19 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
    variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-3.19/7.10.2/bin')
 
-   trigger(type:'polling',description:'Polling',strategy:'periodically',
+   trigger(type:'polling',description:'Polling',
+      strategy:'periodically',
       frequency:'120') {
       repository(name:'Confluence Pandoc Connect')
-
    }
+
    notification(type:'All Builds Completed',recipient:'watchers')
 
-   notification(type:'All Builds Completed',recipient:'hipchat',
+   notification(type:'All Builds Completed',
+      recipient:'hipchat',
       apiKey:'${bamboo.atlassian.hipchat.apikey.password}',
-      notify:'true',room:'2116917')
+      notify:'true',
+      room:'2116917')
 
    stage(name:'Build Docker Image',description:'Create a production ready docker image.') {
       job(key:'CDI',name:'Build and push docker image') {
@@ -22,16 +25,9 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
          requirement(key:'os',condition:'equals',value:'Linux')
 
-         artifactDefinition(name:'Docker Image Save',pattern:'confluence-pandoc-connect.docker.save.tar',
-            shared:'true')
-
-         artifactDefinition(name:'Docker Properties',pattern:'confluence-pandoc-connect.docker.properties',
-            shared:'true')
-
-         task(type:'checkout',description:'Checkout') {
-            repository(name:'Confluence Pandoc Connect')
-
+         task(type:'checkout',description:'Checkout default repository') {
          }
+
          task(type:'script',description:'Create variables file',
             scriptBody:'echo "image.tag=$(git describe --always)" >> tag_variables')
 
@@ -103,12 +99,8 @@ CMD ["confluence-pandoc-connect", "--access-log=-", "--error-log=stderr", "--por
       }
    }
    branchMonitoring() {
-      #createBranch()
-
+      //createBranch()
       inactiveBranchCleanup(periodInDays:'30')
-
       deletedBranchCleanup(periodInDays:'30')
-
    }
 }
-
