@@ -13,7 +13,7 @@ docker build --rm=true --tag=${DOCKER_BUILD_TAG} -f Dockerfile ${DOCKER_BUILD_EX
 
 echo "# Extracting the built binary"
 container_id=$(docker create ${DOCKER_BUILD_TAG})
-docker cp ${container_id}:/build/${STACK_BINARY_PATH}/hidden-charlie - > build-bin.tar
+docker cp ${container_id}:/build/${STACK_BINARY_PATH}/confluence-pandoc-connect - > build-bin.tar
 docker rm -v ${container_id}
 mkdir build-bin
 cd build-bin
