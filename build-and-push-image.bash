@@ -5,13 +5,15 @@ IMAGE_NAME='atlassian/confluence-pandoc-connect'
 IMAGE_TAG=`git describe --always`
 DOCKER_TAG="${REPOSITORY}/${IMAGE_NAME}:${IMAGE_TAG}"
 DOCKER_BUILD_TAG="${DOCKER_TAG}-build"
+STACK_RESOLVER="lts-3.19/7.10.2"
+STACK_BINARY_PATH=".stack-work/install/x86_64-linux/${STACK_RESOLVER}/bin"
 
 echo "# Building the binary with tag ${DOCKER_BUILD_TAG}"
 docker build --rm=true --tag=${DOCKER_BUILD_TAG} -f Dockerfile ${DOCKER_BUILD_EXTRA_ARGS} .
 
 echo "# Extracting the built binary"
 container_id=$(docker create ${DOCKER_BUILD_TAG})
-docker cp ${container_id}:/build/.stack-work/install/x86_64-linux/lts-3.19/7.10.2/bin/hidden-charlie - > build-bin.tar
+docker cp ${container_id}:/build/${STACK_BINARY_PATH}/hidden-charlie - > build-bin.tar
 docker rm -v ${container_id}
 mkdir build-bin
 cd build-bin
