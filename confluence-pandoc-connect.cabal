@@ -24,7 +24,7 @@ Executable confluence-pandoc-connect
       base                      >= 4.6     && < 5
     , aeson                     == 0.8.*
     , atlassian-connect-core    == 0.7.*
-    , atlassian-connect-descriptor == 0.4.1.*
+    , atlassian-connect-descriptor == 0.4.3.*
     , bytestring                >= 0.9.1   && < 0.11
     , case-insensitive          == 1.2.*
     , directory                 == 1.2.*

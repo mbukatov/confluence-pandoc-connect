@@ -1,7 +1,7 @@
-.cabal-sandbox
+.stack-work/
 .ghci
+.git
 log/
-cabal.sandbox.config
 production/to-copy
 dist/
 amps-standalone/
@@ -10,5 +10,5 @@ template-vars.csv
 micros-service.txt
 docker-*.output
 *.docker.properties
-*.docker.save.tar
 service-descriptor.json
+*.tar
