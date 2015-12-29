@@ -1,5 +1,6 @@
 .stack-work/
 .ghci
+.git
 log/
 production/to-copy
 dist/
@@ -9,5 +10,5 @@ template-vars.csv
 micros-service.txt
 docker-*.output
 *.docker.properties
-*.docker.save.tar
 service-descriptor.json
+*.tar
