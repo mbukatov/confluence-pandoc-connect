@@ -31,7 +31,14 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
          }
 
          task(type:'script',description:'Create variables file',
-            scriptBody:'echo "image.tag=$(git describe --always)" >> tag_variables')
+            scriptBody:'''
+FILENAME="tag_variables"
+IMAGE_TAG=$(git describe --always)
+IMAGE_NAME="atlassian/confluence-pandoc-connect"
+echo "image.tag=${IMAGE_TAG}" >> ${FILENAME}
+echo "image.name=${IMAGE_NAME}" >> ${FILENAME}
+echo "image.full.path=docker.atlassian.io/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILENAME}
+''')
 
          task(type:'injectBambooVariables',description:'Inject variables',
             namespace:'inject',scope:'LOCAL',filePath:'tag_variables')
@@ -64,7 +71,7 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
             description:'Build run image',
             serviceTimeout:'120',
             commandOption:'build',
-            repository:'docker.atlassian.io/atlassian/confluence-pandoc-connect:${bamboo.inject.image.tag}',
+            repository:'docker.atlassian.io/${bamboo.inject.image.name}:${bamboo.inject.image.tag}',
             registryOption:'hub',
             serviceUrlPattern:'http://localhost:${docker.port}',
             workDir:'/data',
@@ -96,7 +103,7 @@ CMD ["confluence-pandoc-connect", "--access-log=-", "--error-log=stderr", "--por
             serviceUrlPattern:'http://localhost:${docker.port}',
             workDir:'/data',containerDataVolume_0:'/data',
             dockerfileOption:'inline',hostDirectory_0:'${bamboo.working.directory}',
-            pushRepository:'docker.atlassian.io/atlassian/confluence-pandoc-connect:${bamboo.inject.image.tag}')
+            pushRepository:'docker.atlassian.io/${bamboo.inject.image.name}:${bamboo.inject.image.tag}')
 
       }
    }
