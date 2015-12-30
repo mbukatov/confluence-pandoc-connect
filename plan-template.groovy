@@ -25,6 +25,8 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
          requirement(key:'os',condition:'equals',value:'Linux')
 
+         artifactDefinition(name:'tag_variables',pattern:'*_variables',shared:'true')
+
          task(type:'checkout',description:'Checkout default repository') {
          }
 
