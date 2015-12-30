@@ -89,7 +89,10 @@ EXPOSE 8080
 RUN apt-get update && apt-get install -y openjdk-7-jre-headless
 
 # Install static files
-ADD snaplets resources migrations static /service/
+COPY snaplets /service/snaplets
+COPY resources /service/resources
+COPY migrations /service/migrations
+COPY static /service/static
 
 # Copy and run binary
 ADD ./confluence-pandoc-connect /usr/bin/confluence-pandoc-connect
