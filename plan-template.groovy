@@ -3,7 +3,7 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
    repository(name:'Confluence Pandoc Connect')
 
-   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-3.19/7.10.2/bin')
+   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-5.1/7.10.3/bin')
 
    trigger(type:'polling',description:'Polling',
       strategy:'periodically',
