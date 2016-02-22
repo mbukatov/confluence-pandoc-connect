@@ -1,6 +1,5 @@
 .stack-work/
 .ghci
-.git
 log/
 production/to-copy
 dist/
