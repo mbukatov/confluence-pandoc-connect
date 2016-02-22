@@ -12,3 +12,4 @@ docker-*.output
 *.docker.properties
 service-descriptor.json
 *.tar
+*.dump-hi
