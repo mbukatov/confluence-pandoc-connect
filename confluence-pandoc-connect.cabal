@@ -21,43 +21,43 @@ Executable confluence-pandoc-connect
   default-language:    Haskell2010
 
   Build-depends:
-      base                      >= 4.6     && < 5
-    , aeson                     == 0.8.*
-    , atlassian-connect-core    == 0.7.*
-    , atlassian-connect-descriptor == 0.4.3.*
-    , bytestring                >= 0.9.1   && < 0.11
-    , case-insensitive          == 1.2.*
-    , directory                 == 1.2.*
-    , filepath                  == 1.4.*
-    , gitrev                    == 1.1.0
-    , heist                     >= 0.14    && < 0.15
-    , http-client               == 0.4.*
-    , http-types                == 0.8.*
-    , jwt                       == 0.6.*
-    , lens                      == 4.*
-    , lens-aeson                >= 1.0     && < 1.1
-    , MonadCatchIO-transformers >= 0.2.1   && < 0.4
-    , mtl                       >= 2       && < 3
-    , network-uri               == 2.6.*
-    , pandoc                    == 1.15.*
-    , postgresql-simple         >= 0.4.10  && < 0.5
-    , process                   == 1.2.*
-    , resource-pool-catchio     == 0.2.*
-    , split                     == 0.2.*
-    , snap                      >= 0.13    && < 0.15
-    , snap-core                 >= 0.9     && < 0.10
-    , snap-server               >= 0.9     && < 0.10
-    , snap-loader-static        >= 0.9     && < 0.10
-    , snaplet-postgresql-simple >= 0.6
-    , text                      == 1.2.*
-    , time                      >= 1.1     && < 1.6
-    , transformers              >= 0.4     && < 0.5
-    , unordered-containers      >= 0.2     && < 0.3
-    , xmlhtml                   >= 0.1     && < 0.3
+      base
+    , aeson
+    , atlassian-connect-core
+    , atlassian-connect-descriptor
+    , bytestring
+    , case-insensitive
+    , directory
+    , filepath
+    , gitrev
+    , heist
+    , http-client
+    , http-types
+    , jwt
+    , lens
+    , lens-aeson
+    , MonadCatchIO-transformers
+    , mtl
+    , network-uri
+    , pandoc
+    , postgresql-simple
+    , process
+    , resource-pool-catchio
+    , split
+    , snap
+    , snap-core
+    , snap-server
+    , snap-loader-static
+    , snaplet-postgresql-simple
+    , text
+    , time
+    , transformers
+    , unordered-containers
+    , xmlhtml
 
   if flag(development)
     build-depends:
-      snap-loader-dynamic == 0.10.*
+      snap-loader-dynamic
     cpp-options: -DDEVELOPMENT
     -- In development mode, speed is already going to suffer, so skip
     -- the fancy optimization flags.  Additionally, disable all
