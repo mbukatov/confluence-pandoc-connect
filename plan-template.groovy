@@ -111,7 +111,7 @@ CMD ["confluence-pandoc-connect", "--access-log=-", "--error-log=-", "--port=808
       }
    }
    branchMonitoring() {
-      //createBranch()
+      createBranch()
       inactiveBranchCleanup(periodInDays:'30')
       deletedBranchCleanup(periodInDays:'30')
    }
