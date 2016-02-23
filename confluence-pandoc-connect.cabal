@@ -26,6 +26,7 @@ Executable confluence-pandoc-connect
     , atlassian-connect-core
     , atlassian-connect-descriptor
     , bytestring
+    , cabal-file-th
     , case-insensitive
     , directory
     , filepath
