@@ -1,6 +1,5 @@
 .stack-work/
 .ghci
-.git
 log/
 production/to-copy
 dist/
@@ -12,3 +11,4 @@ docker-*.output
 *.docker.properties
 service-descriptor.json
 *.tar
+*.dump-hi

@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 
 -- | This module is where all the routes and handlers are defined for your
 -- site. The 'app' function is the initializer that combines everything
@@ -18,7 +17,7 @@ import           Control.Monad.IO.Class
 import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Char8         as BC
 import           Data.Maybe
-import           Development.GitRev            (gitHash)
+import           Heartbeat
 import           LifecycleHandlers
 import qualified MicrosZone                    as MZ
 import           MigrationHandler
@@ -30,11 +29,6 @@ import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
 import           System.Environment            (getEnv)
 import           WithToken
-
-heartbeatRequest :: AppHandler ()
-heartbeatRequest = do
-  putResponse $ setResponseCode 200 emptyResponse
-  writeText $(gitHash)
 
 handleCreateRequest :: AppHandler ()
 handleCreateRequest =
