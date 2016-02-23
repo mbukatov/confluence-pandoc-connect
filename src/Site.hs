@@ -17,7 +17,7 @@ import           Control.Monad.IO.Class
 import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Char8         as BC
 import           Data.Maybe
-import           Heartbeat
+import           Healthcheck
 import           LifecycleHandlers
 import qualified MicrosZone                    as MZ
 import           MigrationHandler
@@ -41,6 +41,7 @@ routes = applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("/rest/heartbeat", heartbeatRequest)
   , ("/rest/migration", migrationRequest)
+  , ("/version.json",   versionJson)
   , ("/create",         handleCreateRequest)
   ]
 

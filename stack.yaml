@@ -1,37 +1,18 @@
-# For more information, see: https://github.com/commercialhaskell/stack/blob/release/doc/yaml_configuration.md
-
-# Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-3.19
-
-# Local packages, usually specified by relative directory name
+flags: {}
 packages:
 - '.'
-
-# Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
-extra-deps: [ snap-loader-static-0.9.0.2
-            , snap-loader-dynamic-0.10.0.3
-            , snaplet-postgresql-simple-0.6.0.4
-            , time-units-1.0.0
-            , resource-pool-catchio-0.2.1.0
-            , network-api-support-0.2.1
-            , atlassian-connect-core-0.7.0.1
-            , atlassian-connect-descriptor-0.4.3.0
-            ]
-
-# Override default flag values for local packages and extra-deps
-flags: {}
-
-# Control whether we use the GHC we find on the path
-# system-ghc: true
-
-# Require a specific version of stack, using version ranges
-# require-stack-version: -any # Default
-# require-stack-version: >= 0.1.4.0
-
-# Override the architecture used by stack, especially useful on Windows
-# arch: i386
-# arch: x86_64
-
-# Extra directories used by stack for building
-# extra-include-dirs: [/path/to/dir]
-# extra-lib-dirs: [/path/to/dir]
+extra-deps:
+- aeson-0.8.0.2
+- atlassian-connect-core-0.7.0.1
+- atlassian-connect-descriptor-0.4.3.0
+- attoparsec-0.12.1.6
+- http-types-0.8.6
+- network-api-support-0.2.1
+- pandoc-1.16.0.2
+- resource-pool-catchio-0.2.1.0
+- snap-loader-static-0.9.0.2
+- snap-loader-dynamic-0.10.0.3
+- snaplet-postgresql-simple-0.6.0.4
+- texmath-0.8.4.2
+- yaml-0.8.15.3
+resolver: lts-5.1
