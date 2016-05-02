@@ -36,7 +36,7 @@ withMaybeTenant :: AC.HasConnect (Handler b App) => (Maybe AC.TenantWithUser -> 
 withMaybeTenant tenantApply = do
   parsed <- sequence [getJWTTokenFromParam, getJWTTokenFromAuthHeader]
   case firstRightOrLefts parsed of
-    Left errors -> SH.respondWithErrors SH.badRequest errors >> return Nothing
+    Left _ -> tenantApply Nothing
     Right unverifiedJwt -> do
       possibleTenant <- getTenant unverifiedJwt
       tenantApply $ either (const Nothing) Just possibleTenant

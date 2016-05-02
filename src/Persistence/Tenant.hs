@@ -78,10 +78,8 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
       (Nothing, Just True, _)  -> error "This is a contradiction in state, we both could and could not find clientKeys."
       -- We have never seen this baseUrl and nobody is using that key: brand new tenant, insert
       (Nothing, Nothing, _) -> listToMaybe <$> rawInsertTenantInformation conn lri
-      -- We have seen this tenant before and the authorisation does not match
-      (Just tenant, _, Nothing) -> return Nothing
       -- We have seen this tenant before but we may have new information for it. Update it.
-      (Just tenant, _, Just _) -> do
+      (Just tenant, _, Just claimedTenant) | tenant == claimedTenant -> do
          updateTenantDetails newTenant conn
          wakeTenant newTenant conn
          return . Just . AC.tenantId $ newTenant
@@ -93,6 +91,8 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
                { AC.baseUrl = AC.lrBaseUrl lri
                , AC.sharedSecret = fromMaybe (AC.sharedSecret tenant) (AC.lrSharedSecret lri)
                }
+      -- We have seen this tenant before and the authorisation does not match
+      (Just tenant, _, claimedTenant) -> return Nothing
 
 updateTenantDetails :: AC.Tenant -> Connection ->  IO Int64
 updateTenantDetails tenant conn =
