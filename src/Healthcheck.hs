@@ -16,7 +16,6 @@ import           Distribution.PackageDescription.TH
 import           GHC.Generics
 import           Persistence.PostgreSQL
 import           Persistence.Tenant                 (getTenantCount)
-import           Snap.Core
 import           SnapHelpers
 
 data GitStuff = GitStuff

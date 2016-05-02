@@ -2,6 +2,7 @@
 
 module WithToken where
 
+import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8  as BSC
 import qualified Data.CaseInsensitive   as DC
@@ -55,7 +56,7 @@ lookupTenantWithPageToken pageToken =
     fmap (flip (,) (AC.pageTokenUser pageToken)) <$> TN.lookupTenant conn (AC.pageTokenHost pageToken)
 
 withTokenAndTenant :: (AC.PageToken -> AC.TenantWithUser -> AppHandler ()) -> AppHandler ()
-withTokenAndTenant processor = withTenant $ \ct -> do
+withTokenAndTenant processor = void $ withTenant $ \ct -> do
   token <- liftIO $ AC.generateTokenCurrentTime ct
   processor token ct
 
