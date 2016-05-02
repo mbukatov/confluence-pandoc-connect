@@ -92,7 +92,7 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
                , AC.sharedSecret = fromMaybe (AC.sharedSecret tenant) (AC.lrSharedSecret lri)
                }
       -- We have seen this tenant before and the authorisation does not match
-      (Just tenant, _, claimedTenant) -> return Nothing
+      (Just _, _, _) -> return Nothing
 
 updateTenantDetails :: AC.Tenant -> Connection ->  IO Int64
 updateTenantDetails tenant conn =
