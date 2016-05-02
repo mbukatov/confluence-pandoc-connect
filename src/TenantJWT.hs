@@ -1,42 +1,52 @@
-module TenantJWT ( withTenant ) where
+{-# LANGUAGE FlexibleContexts #-}
+module TenantJWT ( withTenant, withMaybeTenant ) where
 
-import           Control.Applicative
-import           Control.Monad (join, guard)
-import qualified Data.ByteString.Char8          as B
-import qualified Data.CaseInsensitive           as DC
-import           Data.Maybe                     (isJust)
-import qualified Data.Text                      as T
-import qualified Snap.Core                      as SC
-import qualified Web.JWT                        as J
+import           Control.Monad          (guard, join)
+import qualified Data.ByteString.Char8  as B
+import qualified Data.CaseInsensitive   as DC
+import           Data.Maybe             (isJust)
+import qualified Data.Text              as T
+import qualified Snap.Core              as SC
+import           Snap.Snaplet           (Handler)
+import qualified Web.JWT                as J
 
 import           Application
-import qualified Persistence.PostgreSQL         as PP
-import qualified Persistence.Tenant             as PT
-import qualified SnapHelpers                    as SH
-import qualified Snap.AtlassianConnect                 as AC
+import qualified Persistence.PostgreSQL as PP
+import qualified Persistence.Tenant     as PT
+import qualified Snap.AtlassianConnect  as AC
+import qualified SnapHelpers            as SH
 
 -- TODO Should this be moved into the Atlassian connect code? Or does the app handler code make it too specific?
 -- TODO Can we make it not wrap the request but instead run inside the request? That will let it be moved out.
 
 type UnverifiedJWT = J.JWT J.UnverifiedJWT
 
-withTenant :: (AC.TenantWithUser -> AppHandler ()) -> AppHandler ()
-withTenant tennantApply = do
+withTenant :: (AC.TenantWithUser -> AppHandler a) -> AppHandler (Maybe a)
+withTenant tenantApply = do
   parsed <- sequence [getJWTTokenFromParam, getJWTTokenFromAuthHeader]
   case firstRightOrLefts parsed of
-    Left errors -> SH.respondWithErrors SH.badRequest errors
+    Left errors -> SH.respondWithErrors SH.badRequest errors >> return Nothing
     Right unverifiedJwt -> do
       possibleTenant <- getTenant unverifiedJwt
       case possibleTenant of
-        Left result -> SH.respondPlainWithError SH.badRequest result
-        Right tenant -> tennantApply tenant
+        Left result -> SH.respondPlainWithError SH.badRequest result >> return Nothing
+        Right tenant -> Just <$> tenantApply tenant
+
+withMaybeTenant :: AC.HasConnect (Handler b App) => (Maybe AC.TenantWithUser -> Handler b App (Maybe a)) -> Handler b App (Maybe a)
+withMaybeTenant tenantApply = do
+  parsed <- sequence [getJWTTokenFromParam, getJWTTokenFromAuthHeader]
+  case firstRightOrLefts parsed of
+    Left errors -> SH.respondWithErrors SH.badRequest errors >> return Nothing
+    Right unverifiedJwt -> do
+      possibleTenant <- getTenant unverifiedJwt
+      tenantApply $ either (const Nothing) Just possibleTenant
 
 decodeByteString :: B.ByteString -> Maybe UnverifiedJWT
 decodeByteString = J.decode . SH.byteStringToText
 
 -- Standard GET requests (and maybe even POSTs) from Atlassian Connect will put the jwt header in a
 -- param in either the query params or in form params. This method will extract it from either.
-getJWTTokenFromParam :: AppHandler (Either String UnverifiedJWT)
+getJWTTokenFromParam :: Handler b App (Either String UnverifiedJWT)
 getJWTTokenFromParam = do
    potentialParam <- fmap decodeByteString <$> SC.getParam (B.pack "jwt")
    case join potentialParam of
@@ -47,7 +57,7 @@ getJWTTokenFromParam = do
 -- in this format:
 -- Authorization: JWT <token>
 -- This method will extract the JWT token from the Auth header if it is present.
-getJWTTokenFromAuthHeader :: AppHandler (Either String UnverifiedJWT)
+getJWTTokenFromAuthHeader :: Handler b App (Either String UnverifiedJWT)
 getJWTTokenFromAuthHeader = do
    authHeader <- fmap (SC.getHeaders authorizationHeaderName) SC.getRequest
    case authHeader of
@@ -69,7 +79,7 @@ flipEither :: Either a b -> Either b a
 flipEither (Left x)  = Right x
 flipEither (Right x) = Left x
 
-getTenant :: UnverifiedJWT -> AppHandler (Either String AC.TenantWithUser)
+getTenant :: UnverifiedJWT -> Handler b App (Either String AC.TenantWithUser)
 getTenant unverifiedJwt = do
   let potentialKey = getClientKey unverifiedJwt
   -- TODO collapse these cases

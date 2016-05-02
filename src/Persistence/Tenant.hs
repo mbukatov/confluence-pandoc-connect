@@ -62,23 +62,26 @@ removeTenantInformation conn clientKey =
 
 insertTenantInformation
    :: Connection
+   -> Maybe AC.Tenant
    -> AC.LifecycleResponse
    -> IO (Maybe Integer)
-insertTenantInformation conn lri@AC.LifecycleResponseInstalled{} = do
+insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = do
    let newClientKey = AC.lrClientKey lri
    let newBaseUri = AC.lrBaseUrl lri
    oldClientKey <- getClientKeyForBaseUrl conn (AC.getURI newBaseUri)
    existingTenant <- lookupTenant conn newClientKey
    let newAndOldKeysEqual = fmap (== newClientKey) oldClientKey
-   case (existingTenant, newAndOldKeysEqual) of
+   case (existingTenant, newAndOldKeysEqual, maybeTenant) of
       -- The base url is already being used by somebody else TODO should warn about this in production
-      (_, Just False) -> return Nothing
+      (_, Just False, _) -> return Nothing
       -- We could not find a tenant with the new key. But the base url found a old client key that matched the new one: error, contradiction
-      (Nothing, Just True)  -> error "This is a contradiction in state, we both could and could not find clientKeys."
+      (Nothing, Just True, _)  -> error "This is a contradiction in state, we both could and could not find clientKeys."
       -- We have never seen this baseUrl and nobody is using that key: brand new tenant, insert
-      (Nothing, Nothing) -> listToMaybe <$> rawInsertTenantInformation conn lri
+      (Nothing, Nothing, _) -> listToMaybe <$> rawInsertTenantInformation conn lri
+      -- We have seen this tenant before and the authorisation does not match
+      (Just tenant, _, Nothing) -> return Nothing
       -- We have seen this tenant before but we may have new information for it. Update it.
-      (Just tenant, _) -> do
+      (Just tenant, _, Just _) -> do
          updateTenantDetails newTenant conn
          wakeTenant newTenant conn
          return . Just . AC.tenantId $ newTenant
