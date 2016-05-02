@@ -14,7 +14,6 @@ module Persistence.Tenant (
   , findTenantsByBaseUrl
 ) where
 
-import           Control.Applicative              ((<$>))
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Int
@@ -65,7 +64,7 @@ insertTenantInformation
    :: Connection
    -> AC.LifecycleResponse
    -> IO (Maybe Integer)
-insertTenantInformation conn lri@(AC.LifecycleResponseInstalled {}) = do
+insertTenantInformation conn lri@AC.LifecycleResponseInstalled{} = do
    let newClientKey = AC.lrClientKey lri
    let newBaseUri = AC.lrBaseUrl lri
    oldClientKey <- getClientKeyForBaseUrl conn (AC.getURI newBaseUri)
@@ -104,7 +103,7 @@ updateTenantDetails tenant conn =
    |] (AC.publicKey tenant, AC.sharedSecret tenant, AC.getURI . AC.baseUrl $ tenant, AC.productType tenant, AC.tenantId tenant)
 
 rawInsertTenantInformation :: Connection -> AC.LifecycleResponse -> IO [Integer]
-rawInsertTenantInformation conn lri@(AC.LifecycleResponseInstalled {}) =
+rawInsertTenantInformation conn lri@AC.LifecycleResponseInstalled{} =
    fmap join . liftIO $ query conn [sql|
       INSERT INTO tenant (key, publicKey, sharedSecret, baseUrl, productType)
       VALUES (?, ?, ?, ?, ?) RETURNING id
