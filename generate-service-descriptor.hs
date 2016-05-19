@@ -4,7 +4,7 @@ serviceDescriptor :: String -> String
 serviceDescriptor version = "{\n\
 \   \"description\": \"Import files and stuff\",\n\
 \   \"name\": \"Confluence Pandoc Connect\",\n\
-\   \"organization\": \"RD:Identity\",\n\
+\   \"organization\": \"CISO-Identity\",\n\
 \   \"externalAccess\": true,\n\
 \   \"resources\": [{\n\
 \      \"type\": \"postgres-db\",\n\
