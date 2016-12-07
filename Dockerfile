@@ -1,4 +1,4 @@
-FROM fpco/stack-build:lts-5.1
+FROM fpco/stack-build:lts-7.12
 MAINTAINER Avi Knoll <aknoll@atlassian.com>
 
 # Copy our context into the build directory and start working from there
