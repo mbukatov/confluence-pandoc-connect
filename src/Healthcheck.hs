@@ -13,7 +13,7 @@ import           Data.Int
 import qualified Data.Text                          as T
 import qualified Development.GitRev                 as GR
 import           Distribution.PackageDescription.TH
-import           GHC.Generics
+import           GHC.Generics                       hiding (packageName)
 import           Persistence.PostgreSQL
 import           Persistence.Tenant                 (getTenantCount)
 import           SnapHelpers

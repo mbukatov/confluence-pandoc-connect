@@ -15,6 +15,7 @@ import qualified Data.ByteString                       as BS
 import qualified Data.ByteString.Char8                 as BC
 import qualified Data.ByteString.Lazy                  as LBS
 import qualified Data.CaseInsensitive                  as CI
+import           Data.Map.Syntax
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text                             as T
@@ -76,7 +77,11 @@ renderErrorPage title content (tenant, _) = do
 
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
-  maybeFilenameAndContent <- handleFileUploads "/tmp" uploadPolicy (\_ -> allowWithMaximumSize maxFileSize) formHandler
+  maybeFilenameAndContent : _ <- handleFileUploads
+    "/tmp"
+    uploadPolicy
+    (const $ allowWithMaximumSize (getMaximumFormInputSize defaultUploadPolicy))
+    handlePart
 
   maybeSpaceKey <- getParam "space-key"
   let maybeSpaceKey' = ConfluenceTypes.Space . Key . E.decodeUtf8 <$> maybeSpaceKey
@@ -87,15 +92,13 @@ convertFileFromFormData = do
   where
     uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
     maxFileSize = 100000000 -- 100 MB
-    formHandler = foldl handlePart (return Nothing)
-    handlePart acc (fileInfo, errorOrFilePath) = do
-      prevResult <- acc
+    handlePart fileInfo errorOrFilePath = do
       if partFieldName fileInfo == "file-upload"
         then
             either
-              (\_ -> uploadFailed >> return Nothing)
+              (\_ -> return Nothing)
               (\filePath -> do
-                fileContent <- liftIO $ BS.readFile filePath
+                fileContent <- BS.readFile filePath
                 return . Just $ (BC.unpack . fromMaybe "empty file" $ partFileName fileInfo, fileContent)
               )
               errorOrFilePath

@@ -7,8 +7,9 @@ packages:
 extra-deps:
 - atlassian-connect-descriptor-0.4.4.1
 - heist-1.0.1.0
+- http-types-0.8.6
 - map-syntax-0.2.0.1
-- network-api-support-0.1.0
+- network-api-support-0.2.2
 - snap-1.0.0.1
 - snap-loader-static-1.0.0.0
 - snaplet-postgresql-simple-1.0.1.0

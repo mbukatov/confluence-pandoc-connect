@@ -37,11 +37,13 @@ Executable confluence-pandoc-connect
     , jwt
     , lens
     , lens-aeson
+    , map-syntax
     , mtl
     , network-uri
     , pandoc
     , postgresql-simple
     , process
+    , resource-pool
     , split
     , snap
     , snap-core
