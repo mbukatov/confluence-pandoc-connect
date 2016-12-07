@@ -1,18 +1,16 @@
 flags: {}
 packages:
 - '.'
+- location:
+    git: git@bitbucket.org:ajknoll_atlassian/atlassian-connect-core.git
+    commit: 15804576c53ed5b5e64525b416c7df5e5c385462
 extra-deps:
-- aeson-0.8.0.2
-- atlassian-connect-core-0.7.0.1
-- atlassian-connect-descriptor-0.4.3.0
-- attoparsec-0.12.1.6
-- http-types-0.8.6
-- network-api-support-0.2.1
-- pandoc-1.16.0.2
-- resource-pool-catchio-0.2.1.0
-- snap-loader-static-0.9.0.2
-- snap-loader-dynamic-0.10.0.3
-- snaplet-postgresql-simple-0.6.0.4
-- texmath-0.8.4.2
-- yaml-0.8.15.3
-resolver: lts-5.1
+- atlassian-connect-descriptor-0.4.4.1
+- heist-1.0.1.0
+- map-syntax-0.2.0.1
+- network-api-support-0.1.0
+- snap-1.0.0.1
+- snap-loader-static-1.0.0.0
+- snaplet-postgresql-simple-1.0.1.0
+- time-units-1.0.0
+resolver: lts-7.12
