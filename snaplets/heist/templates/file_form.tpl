@@ -3,6 +3,15 @@
  <head>
      <link rel="stylesheet" href="//aui-cdn.atlassian.com/aui-adg/5.4.3/css/aui.css" media="all">
      <script src="${productBaseUrl}/atlassian-connect/all.js" type="text/javascript"></script>
+     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+     <script src="http://cdnjs.cloudflare.com/ajax/libs/sinon.js/1.15.4/sinon.js"></script>
+     <script src="//aui-cdn.atlassian.com/aui-adg/6.0.3/js/aui.js"></script>
+     <script src="//aui-cdn.atlassian.com/aui-adg/6.0.3/js/aui-experimental.js"></script>
+     <script src="//aui-cdn.atlassian.com/aui-adg/6.0.3/js/aui-datepicker.js"></script>
+     <link rel="stylesheet" type="text/css" href="//aui-cdn.atlassian.com/aui-adg/6.0.3/css/aui.css"/>
+     <link rel="stylesheet" type="text/css" href="//aui-cdn.atlassian.com/aui-adg/6.0.3/css/aui-experimental.css"/>
+     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
  </head>
  <body>
      <section id="content" class="ac-content">
@@ -10,6 +19,28 @@
              <input type="hidden" name="page-token" value="${connectPageToken}">
              <input type="hidden" id="current-space-key" value="${spaceKey}">
              <input type="hidden" id="current-page-id" value="${contentId}">
+
+             <div class="field-group">
+                 <fieldset class="group" style="padding: 4px 0 4px 15px;">
+
+                     <div class="radio">
+                         <label for="page-selector-child">as a child of the current page (<span id="currentPageName"></span>)</label>
+                         <input class="radio" type="radio" checked="checked"
+                                name="page-selectors" id="page-selector-child" value="${contentId}" onclick="checkRadio()">
+                     </div>
+
+                     <div class="radio">
+                         <label for="page-selector-root">at the root of:</label>
+                         <input class="radio" type="radio"
+                                name="page-selectors" id="page-selector-root" value="root" onclick="checkRadio()">
+                     </div>
+                     <br>
+                     <label for="space-key">Space</label>
+                     <select class="select" id="space-key" name="space-key" onchange="spaceKeyChanged();"></select>
+                 </fieldset>
+             </div>
+             <br>
+             <br>
              <fieldset>
                  <legend><span>File upload</span></legend>
                  <div class="field-group">
@@ -19,29 +50,9 @@
                      <div class="description">The file to be converted.</div>
                  </div>
              </fieldset>
-             <div class="field-group">
-                 <label for="space-key">Space</label>
-                 <select class="select" id="space-key" name="space-key" onchange="spaceKeyChanged();"></select>
-                 <fieldset class="group" style="padding: 4px 0 4px 15px;">
-                     <div class="radio">
-                         <label for="page-selector-child">as a child of the current page (<span id="currentPageName"></span>)</label>
-                         <input class="radio" type="radio" checked="checked"
-                                name="page-selectors" id="page-selector-child" value="${contentId}">
-                     </div>
-                     <div class="radio">
-                         <label for="page-selector-root">at the root of the space</label>
-                         <input class="radio" type="radio"
-                                name="page-selectors" id="page-selector-root" value="root">
-                     </div>
-                 </fieldset>
-             </div>
-             <div class="field-group">
-                 <label for="page-title">Page title
-                     <span class="aui-icon icon-required">(required)</span></label>
-                 <input class="text" type="text"
-                        id="page-title" name="page-title" placeholder="">
-             </div>
          </form>
+         <script>
+         </script>
      </section>
      <script type="text/javascript">
        var currentSpaceKey = document.getElementById('current-space-key').value,
@@ -72,14 +83,17 @@
                  i;
 
              for(i = 0; i < results.length; i++) {
+
                option = document.createElement('option');
                option.value = results[i].key;
                option.text = results[i].name;
+
                if(results[i].key == currentSpaceKey) {
                    option.selected = 'selected';
                }
                select.add(option);
              }
+//               AJS.$("#space-key").auiSelect2({tags:select});
            }
          });
 
@@ -113,11 +127,21 @@
              userSelectedPageUnderRoot = radioPageSelectorRoot.checked;
            }
            radioPageSelectorRoot.checked = true;
-
-           radioPageSelectorChild.disabled = true;
-           radioPageSelectorRoot.disabled = true;
          }
        }
+
+       if (radioPageSelectorChild.checked) {
+           select.disabled = true;
+       }
+
+       function checkRadio() {
+           if (radioPageSelectorChild.checked) {
+               select.disabled = true;
+           } else {
+               select.disabled = false;
+           }
+       }
+
      </script>
  </body>
 </html>
