@@ -122,7 +122,7 @@ convertFile filename fileContent =
 
     runReader (StringReader readerF) = do
       let doRead = readerF def -- def is "default"
-      errorOrReadResult <- liftIO $ (doRead . BC.unpack $ fileContent)
+      errorOrReadResult <- liftIO $ doRead . BC.unpack $ fileContent
       either
         (const readFailed)
         (\pandoc -> do
