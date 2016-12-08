@@ -75,6 +75,12 @@ renderErrorPage title content (tenant, _) = do
       "errorTitle" ## title
       "errorContent" ## content
 
+createDirectoryPage :: T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+createDirectoryPage title spaceKey maybePageId tenantWithUser =
+  createPage title content spaceKey maybePageId tenantWithUser
+  where
+    content = "<p><ac:structured-macro ac:name=\"children\" ac:schema-version=\"2\" /></p>"
+
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent : _ <- handleFileUploads
@@ -116,10 +122,12 @@ convertFile filename fileContent =
 
     runReader (StringReader readerF) = do
       let doRead = readerF def -- def is "default"
-      errorOrReadResult <- liftIO . doRead . BC.unpack $ fileContent
+      errorOrReadResult <- liftIO $ (doRead . BC.unpack $ fileContent)
       either
         (const readFailed)
-        (writeConfluenceStorageFormat >=> maybe pageCreateFailed (\_ -> return ()))
+        (\pandoc -> do
+            maybePageId <- (liftIO $ pandocToConfluenceStorageFormat pandoc) >>= writeConfluenceStorageFormat
+            maybe pageCreateFailed (\_ -> return ()) maybePageId)
         errorOrReadResult
 
     runReader (ByteStringReader readerF) = do
@@ -128,7 +136,7 @@ convertFile filename fileContent =
       either
         (const readFailed)
         (\(pandoc, mediaBag) -> do
-             maybePageId <- writeConfluenceStorageFormat pandoc
+             maybePageId <- (liftIO $ pandocToConfluenceStorageFormat pandoc) >>= writeConfluenceStorageFormat
              resp <- maybe (return Nothing) (\pageId -> tenantFromToken $ uploadMedia pageId mediaBag) maybePageId
              maybe pageCreateFailed (either (const pageCreateFailed) (\_ -> return ())) resp
         )
@@ -163,17 +171,19 @@ createPage filename fileContent spaceKey maybePageId (tenant, maybeUser) = do
                        $ HR.setBody (LBS.toStrict requestBody) <>
                          HR.addHeader (hContentType, "application/json")
 
-writeConfluenceStorageFormat :: Pandoc -> AppHandler (Maybe PageId)
-writeConfluenceStorageFormat pandoc = do
+pandocToConfluenceStorageFormat :: Pandoc -> IO T.Text
+pandocToConfluenceStorageFormat pandoc = T.pack <$> writeCustom "resources/confluence-storage.lua" def pandoc
+
+writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
+writeConfluenceStorageFormat text = do
   maybePageTitle <- getParam "page-title"
   maybeSpaceKey <- getParam "space-key"
   maybePageIdParam <- getParam "page-selectors"
   let maybePageId = parsePageIdParam maybePageIdParam
-  writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
   errorOrResponse <- tenantFromToken $ createPage
                        (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
-                       (T.pack writeResult)
+                       text
                        (ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
                        maybePageId
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
