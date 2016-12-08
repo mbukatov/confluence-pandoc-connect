@@ -24,3 +24,11 @@ img {
 #info {
    font-size: 60%;
 }
+#completed-files {
+   height: 250px;
+   width: 100%;
+   overflow-y: scroll;
+}
+.red {
+   color: red;
+}
