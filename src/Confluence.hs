@@ -81,20 +81,6 @@ createDirectoryPage title spaceKey maybePageId tenantWithUser =
   where
     content = "<p><ac:structured-macro ac:name=\"children\" ac:schema-version=\"2\" /></p>"
 
-getUniquePageName :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler T.Text
-getUniquePageName originalName (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
-  number <- getNumber originalName 0
-  return $ originalName `T.append` numberSuffix number
-  where
-    contentReq name = with connect $ hostGetRequest tenant "/rest/api/content" [] $ HR.setQueryParams [("spaceKey", Just $ E.encodeUtf8 spaceKey), ("title", Just $ E.encodeUtf8 name)]
-    getNumber :: T.Text -> Integer -> AppHandler Integer
-    getNumber name number = do
-      errorOrResponse <- contentReq (name `T.append` numberSuffix number)
-      either (fail "Failed to talk to Confluence") (\val -> if searchIsEmpty val then return number else getNumber name (number + 1)) errorOrResponse
-    searchIsEmpty :: A.Value -> Bool
-    searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
-    numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
-
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent : _ <- handleFileUploads
@@ -173,20 +159,35 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
     parts = map partTransform allFiles
 
 createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-createPage filename fileContent spaceKey maybePageId (tenant, maybeUser) = do
-  let requestBody = A.encode PageDetails
+createPage filename fileContent spaceKey maybePageId twu@(tenant, maybeUser) = do
+  pageTitle_ <- getUniquePageName filename spaceKey twu
+  let requestBody_ = A.encode PageDetails
                       { pageType = Page
-                      , pageTitle = filename
+                      , pageTitle = pageTitle_
                       , pageSpace = spaceKey
                       , pageBody = Body fileContent
                       , pageAncestors = maybeToList maybePageId
                       }
   with connect $ hostPostRequest tenant "/rest/api/content" []
-                       $ HR.setBody (LBS.toStrict requestBody) <>
+                       $ HR.setBody (LBS.toStrict requestBody_) <>
                          HR.addHeader (hContentType, "application/json")
 
 pandocToConfluenceStorageFormat :: Pandoc -> IO T.Text
 pandocToConfluenceStorageFormat pandoc = T.pack <$> writeCustom "resources/confluence-storage.lua" def pandoc
+
+getUniquePageName :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler T.Text
+getUniquePageName originalName (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
+  number <- getNumber originalName 0
+  return $ originalName `T.append` numberSuffix number
+  where
+    contentReq name = with connect $ hostGetRequest tenant "/rest/api/content" [] $ HR.setQueryParams [("spaceKey", Just $ E.encodeUtf8 spaceKey), ("title", Just $ E.encodeUtf8 name)]
+    getNumber :: T.Text -> Integer -> AppHandler Integer
+    getNumber name number = do
+      errorOrResponse <- contentReq (name `T.append` numberSuffix number)
+      either (fail "Failed to talk to Confluence") (\val -> if searchIsEmpty val then return number else getNumber name (number + 1)) errorOrResponse
+    searchIsEmpty :: A.Value -> Bool
+    searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
+    numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
 
 writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat text = do
