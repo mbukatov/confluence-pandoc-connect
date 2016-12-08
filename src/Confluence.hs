@@ -221,7 +221,7 @@ writeConfluenceStorageFormat text = do
   let decodedMaybeFilePath = E.decodeUtf8 <$> maybeFilePath
       stringFilePath = T.unpack <$> decodedMaybeFilePath
       maybePageTitle = takeFileName <$> stringFilePath
-      maybePathPrefix = splitPath . dropFileName <$> stringFilePath
+      maybePathPrefix = splitPath . dropFileName . normalise <$> stringFilePath
   maybeSpaceKey <- getParam "space-key"
   let spaceKey = ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey
   maybePageIdParam <- getParam "page-selectors"
