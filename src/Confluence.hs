@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -21,6 +22,7 @@ import           Data.Monoid
 import qualified Data.Text                             as T
 import qualified Data.Text.Encoding                    as E
 import           Data.Text.Lens                        (unpacked)
+import           GHC.Generics
 import           Heist
 import qualified Heist.Interpreted                     as I
 import           JsonRpc
@@ -41,6 +43,13 @@ import qualified SnapHelpers                           as SH
 import           Text.Pandoc
 import           Text.Pandoc.MediaBag
 import           WithToken
+
+
+data ErrorMessage = ErrorMessage
+  { emPageTitle :: Maybe T.Text
+  , emMessage   :: T.Text
+  } deriving (Show, Eq, Generic)
+instance A.ToJSON ErrorMessage
 
 baseUrlFromTenant :: Tenant -> T.Text
 baseUrlFromTenant = T.pack . show . getURI . baseUrl
@@ -65,15 +74,10 @@ renderFileForm token (tenant, _) = do
         Nothing -> fail "Required parameter missing"
         Just paramValue -> return $ SH.byteStringToText paramValue
 
-renderErrorPage :: T.Text -> T.Text -> TenantWithUser -> AppHandler ()
-renderErrorPage title content (tenant, _) = do
-  putResponse $ setResponseCode SH.badRequest emptyResponse
-  heistLocal (I.bindStrings splices) $ render "error_page"
-  where
-    splices = do
-      "productBaseUrl" ## baseUrlFromTenant tenant
-      "errorTitle" ## title
-      "errorContent" ## content
+errorResponse :: ErrorMessage -> TenantWithUser -> AppHandler ()
+errorResponse message (tenant, _) = do
+  putResponse $ setResponseCode SH.badRequest $ emptyResponse
+  SH.writeJson message
 
 createDirectoryPage :: T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createDirectoryPage title spaceKey maybePageId tenantWithUser =
@@ -94,7 +98,7 @@ convertFileFromFormData = do
   canCreate <- maybe (fail "No space key?!") (tenantFromToken . userCanCreatePage) maybeSpaceKey'
   if fromMaybe False canCreate
      then maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
-     else noPermission
+     else (noPermission (T.pack . fst <$> maybeFilenameAndContent))
   where
     uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
     maxFileSize = 100000000 -- 100 MB
@@ -109,16 +113,17 @@ convertFileFromFormData = do
               )
               errorOrFilePath
         else return Nothing
-    uploadFailed = fromJust <$> tenantFromToken (renderErrorPage "Upload failed" "Uploading your file to the importer failed. Please try again.")
-    noPermission = fromJust <$> tenantFromToken (renderErrorPage "Couldn't create page" "You don't have permission to create a new page in this space. If you think you should, please contact your administrator.")
+    uploadFailed = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage Nothing "Uploading your file to the importer failed. Please try again.")
+    noPermission name = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage name "You don't have permission to create a new page in this space. If you think you should, please contact your administrator.")
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
   either (const noReaderFound) runReader $ readerFromFilename filename
   where
-    noReaderFound = fromJust <$> tenantFromToken (renderErrorPage "Unsupported file format" "Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup.")
-    readFailed = fromJust <$> tenantFromToken (renderErrorPage "File import failed" "We couldn't understand your file :(")
-    pageCreateFailed = fromJust <$> tenantFromToken (renderErrorPage "File import failed" "Couldn't create a new Confluence page.")
+    packedFilename = Just . T.pack $ filename
+    noReaderFound = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage packedFilename "Unsupported file format. Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup.")
+    readFailed = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage packedFilename "We couldn't understand your file :(")
+    pageCreateFailed = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage packedFilename "File import failed: Couldn't create a new Confluence page.")
 
     runReader (StringReader readerF) = do
       let doRead = readerF def -- def is "default"
@@ -225,7 +230,7 @@ pageRedirect o =
     wu = link "base" <> link "webui"
     jsRedirect d =
       heistLocal (I.bindStrings $ "destination" ## d) $ render "page_redirect_dialog"
-    noLinkFound = fromJust <$> tenantFromToken (renderErrorPage "Redirect failed" "We couldn't figure out where Confluence created your page, please close the dialog manually.")
+    noLinkFound = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage Nothing "We couldn't figure out where Confluence created your page, please close the dialog manually.")
 
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
