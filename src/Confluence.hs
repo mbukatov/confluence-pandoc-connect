@@ -75,6 +75,12 @@ renderErrorPage title content (tenant, _) = do
       "errorTitle" ## title
       "errorContent" ## content
 
+createDirectoryPage :: T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+createDirectoryPage title spaceKey maybePageId tenantWithUser =
+  createPage title content spaceKey maybePageId tenantWithUser
+  where
+    content = "<p><ac:structured-macro ac:name=\"children\" ac:schema-version=\"2\" /></p>"
+
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent : _ <- handleFileUploads
@@ -116,10 +122,12 @@ convertFile filename fileContent =
 
     runReader (StringReader readerF) = do
       let doRead = readerF def -- def is "default"
-      errorOrReadResult <- liftIO . doRead . BC.unpack $ fileContent
+      errorOrReadResult <- liftIO $ doRead . BC.unpack $ fileContent
       either
         (const readFailed)
-        (writeConfluenceStorageFormat >=> maybe pageCreateFailed (\_ -> return ()))
+        (\pandoc -> do
+            maybePageId <- (liftIO $ pandocToConfluenceStorageFormat pandoc) >>= writeConfluenceStorageFormat
+            maybe pageCreateFailed (\_ -> return ()) maybePageId)
         errorOrReadResult
 
     runReader (ByteStringReader readerF) = do
@@ -128,7 +136,7 @@ convertFile filename fileContent =
       either
         (const readFailed)
         (\(pandoc, mediaBag) -> do
-             maybePageId <- writeConfluenceStorageFormat pandoc
+             maybePageId <- (liftIO $ pandocToConfluenceStorageFormat pandoc) >>= writeConfluenceStorageFormat
              resp <- maybe (return Nothing) (\pageId -> tenantFromToken $ uploadMedia pageId mediaBag) maybePageId
              maybe pageCreateFailed (either (const pageCreateFailed) (\_ -> return ())) resp
         )
@@ -151,29 +159,51 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
     parts = map partTransform allFiles
 
 createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-createPage filename fileContent spaceKey maybePageId (tenant, maybeUser) = do
-  let requestBody = A.encode PageDetails
+createPage filename fileContent spaceKey maybePageId twu@(tenant, maybeUser) = do
+  pageTitle_ <- getUniquePageName filename spaceKey twu
+  let requestBody_ = A.encode PageDetails
                       { pageType = Page
-                      , pageTitle = filename
+                      , pageTitle = pageTitle_
                       , pageSpace = spaceKey
                       , pageBody = Body fileContent
                       , pageAncestors = maybeToList maybePageId
                       }
   with connect $ hostPostRequest tenant "/rest/api/content" []
-                       $ HR.setBody (LBS.toStrict requestBody) <>
+                       $ HR.setBody (LBS.toStrict requestBody_) <>
                          HR.addHeader (hContentType, "application/json")
 
-writeConfluenceStorageFormat :: Pandoc -> AppHandler (Maybe PageId)
-writeConfluenceStorageFormat pandoc = do
+pandocToConfluenceStorageFormat :: Pandoc -> IO T.Text
+pandocToConfluenceStorageFormat pandoc = T.pack <$> writeCustom "resources/confluence-storage.lua" def pandoc
+
+getUniquePageName :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler T.Text
+getUniquePageName originalName spaceKey twu = do
+  number <- getNumber originalName 0
+  return $ originalName `T.append` numberSuffix number
+  where
+    getNumber :: T.Text -> Integer -> AppHandler Integer
+    getNumber name number = do
+      needNext <- pageExists (name `T.append` numberSuffix number) spaceKey twu
+      if needNext then getNumber name (number + 1) else return number
+    numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
+
+pageExists :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler Bool
+pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) =
+  contentReq >>= either (fail "Failed to talk to Confluence") (return . not . searchIsEmpty)
+  where
+    contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
+    searchIsEmpty :: A.Value -> Bool
+    searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
+
+writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
+writeConfluenceStorageFormat text = do
   maybePageTitle <- getParam "page-title"
   maybeSpaceKey <- getParam "space-key"
   maybePageIdParam <- getParam "page-selectors"
   let maybePageId = parsePageIdParam maybePageIdParam
-  writeResult <- liftIO $ writeCustom "resources/confluence-storage.lua" def pandoc
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
   errorOrResponse <- tenantFromToken $ createPage
                        (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
-                       (T.pack writeResult)
+                       text
                        (ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
                        maybePageId
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
@@ -210,5 +240,11 @@ readerFromFilename filename =
 hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
 hostPostRequest t uri auth req = HR.hostPostRequest t uri auth req >>= (\r -> logProductError r >> return r)
   where
-    logProductError (Left err) = logError . BC.pack $ show err
+    logProductError (Left err) = logError $ BC.concat ["POST request to ", uri, " failed: ", BC.pack $ show err]
+    logProductError _ = return ()
+
+hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
+hostGetRequest t uri auth req = HR.hostGetRequest t uri auth req >>= (\r -> logProductError r >> return r)
+  where
+    logProductError (Left err) = logError $ BC.concat ["GET request to ", uri, " failed: ", BC.pack $ show err]
     logProductError _ = return ()
