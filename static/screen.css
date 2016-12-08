@@ -32,3 +32,6 @@ img {
 .red {
    color: red;
 }
+.link {
+   cursor: pointer;
+}

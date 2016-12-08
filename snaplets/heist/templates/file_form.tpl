@@ -1,6 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        #completed-files {
+            height: 250px;
+            width: 100%;
+            overflow-y: scroll;
+        }
+        .red {
+            color: red;
+        }
+        .link {
+            cursor: pointer;
+        }
+        .ac-content {
+            max-width: 400px;
+            margin: 20px auto !important;
+        }
+        #content1 {
+            display: none;
+        }
+        #progress-num {
+            width: 100%;
+            text-align: right;
+        }
+        .the-group {
+            padding: 4px 0 4px 15px !important;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        .nothing {
+            position: absolute;
+            left: 20px;
+        }
+    </style>
     <link rel="stylesheet" href="//aui-cdn.atlassian.com/aui-adg/5.4.3/css/aui.css" media="all">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -19,8 +53,8 @@
         <input type="hidden" id="current-space-key" value="${spaceKey}">
         <input type="hidden" id="current-page-id" value="${contentId}">
 
-        <div class="field-group">
-            <fieldset class="group" style="padding: 4px 0 4px 15px;">
+        <p class="bold">Select where in Confluence to add the new Pages:</p>
+            <fieldset class="group the-group">
 
                 <div class="radio">
                     <label for="page-selector-child">as a child of the current page (<span id="currentPageName"></span>)</label>
@@ -36,31 +70,33 @@
                 <br>
                 <select class="select" id="space-key" name="space-key" onchange="spaceKeyChanged();"></select>
             </fieldset>
-        </div>
         <br>
         <br>
         <fieldset>
+
+            <p class="bold">Select the file(s) and/or directory to be uploaded:</p>
             <legend><span>File upload</span></legend>
             <div class="field-group">
-                <label for="file-upload">Upload directory</label>
-                <input class="upfile" type="file" webkitdirectory mozdirectory id="file-upload"
-                       name="file-upload">
+                <p class="nothing">Upload file(s)</p>
+                <label class="ffi is-active" data-ffi-button-text="Browse">
+                    <input type="file" multiple id="file-upload1" name="file-upload1" aria-label="Upload file(s)">
+                </label>
             </div>
             <div class="field-group">
-                <label for="file-upload1">Upload file(s)</label>
-                <input class="upfile" type="file" multiple id="file-upload1"
-                       name="file-upload1">
+                <p class="nothing">Upload directory</p>
+                <label class="ffi is-active" data-ffi-button-text="Browse">
+                    <input type="file" webkitdirectory mozdirectory id="file-upload" name="file-upload" aria-label="Upload directory">
+                </label>
             </div>
-            <div class="description">The file to be converted.</div>
         </fieldset>
     </form>
 </section>
-<section id="content1" style="display: none; padding: 20px;">
+<section id="content1" class="ac-content">
     Progress
     <div id="progress" class="aui-progress-indicator">
         <span class="aui-progress-indicator-value"></span>
     </div>
-    <div style="width: 100%; text-align: right">
+    <div id="progress-num">
         <span id="files-done">0</span> / <span id="total-files">0</span>
     </div>
     <div id="completed-files">
@@ -69,6 +105,34 @@
     </div>
 </section>
 <script type="text/javascript">
+    var fakePathRegex = /^.*[\\\/]/;
+    var multipleFileTextRegex = /\{0\}/gi;
+    FancyFileInput.prototype.change = function () {
+        var files;
+        var val = '';
+
+        this.checkValidity();
+
+        // multiple file selection
+        if (this.el.files.length > 1) {
+            files = this.formatMultipleFileText(this.el.files.length); // '5 files'
+        } else {
+            files = this.el.value; // 'README.txt'
+        }
+
+        if (files.length) {
+            val = files.replace(fakePathRegex, ''); // Strips off the C:\fakepath nonsense
+            this.$clearButton.appendTo(this.$label);
+        } else {
+            this.$clearButton.detach();
+        }
+
+        this.$el.focus();
+        this.setFieldText(val);
+        this.fireEvent('value-changed');
+    };
+
+
     var currentSpaceKey = document.getElementById('current-space-key').value,
             select = document.getElementById('space-key'),
             radioPageSelectorChild = document.getElementById('page-selector-child'),
@@ -76,7 +140,7 @@
             userSelectedPageUnderRoot = null,
             totalFiles = 0,
             filesDone = 0;
-    select.values = currentSpaceKey;
+    select.value = currentSpaceKey;
 
     (function() {
         var upload = document.getElementById('file-upload'),
@@ -143,11 +207,13 @@
 
        if (radioPageSelectorChild.checked) {
            select.disabled = true;
+           select.value = currentSpaceKey;
        }
 
        function checkRadio() {
            if (radioPageSelectorChild.checked) {
                select.disabled = true;
+               select.value = currentSpaceKey;
            } else {
                select.disabled = false;
            }
@@ -162,8 +228,7 @@
         document.getElementById('total-files').innerHTML = totalFiles;
         for (var i = 0; i < totalFiles; i++) {
 
-            var pagename = files[i].name.substr(0, files[i].name.lastIndexOf('.'));
-            console.log(pagename);
+            var pagename = files[i].webkitRelativePath.substr(0, files[i].webkitRelativePath.lastIndexOf('.'));
 
             var oReq = new XMLHttpRequest();
             oReq.open("POST", "/create", true);
@@ -182,14 +247,14 @@
     }
 
     function requestDone() {
+        console.log(this.responseText);
         var response = JSON.parse(this.responseText);
         filesDone++;
         document.getElementById('files-done').innerHTML = filesDone;
-        var pagename = "jkl;";
         if (this.status === 200) {
             document.getElementById('completed-files-list').innerHTML =
                     document.getElementById('completed-files-list').innerHTML +
-                    '<li><a onclick="redirect(' + "'" + response.rrUri + "'" + ')" data-destination="' +
+                    '<li><a class="link" onclick="redirect(' + "'" + response.rrUri + "'" + ')" data-destination="' +
                     response.rrUri +
                     '">' +
                     response.rrPageTitle +
@@ -197,7 +262,7 @@
         } else {
             document.getElementById('completed-files-list').innerHTML =
                     document.getElementById('completed-files-list').innerHTML + '<li class="red">' +
-                    pagename +
+                    response.emPageTitle +
                     ' failed to be uploaded</li>';
         }
         AJS.progressBars.update("#progress", filesDone / totalFiles);
@@ -209,6 +274,14 @@
     function redirect(url) {
         parent.location = url;
     }
+//    $(function(){
+//        $('input[type=file]').fancyFileInput();
+//    });
+
+
+    $('input[type=file]').fancyFileInput({
+        multipleFileTextPattern: "{0} files" // Shown when multiple files are chosen
+    });
 
      </script>
  </body>
