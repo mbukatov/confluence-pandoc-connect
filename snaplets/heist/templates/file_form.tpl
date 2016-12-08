@@ -105,6 +105,9 @@
     </div>
 </section>
 <script type="text/javascript">
+
+    // Modified from
+    // https://bitbucket.org/atlassianlabs/fancy-file-input/src/ed45df77746ce06586384d3eb67a25c72ff826a6/src/fancy-file-input.js
     var fakePathRegex = /^.*[\\\/]/;
     var multipleFileTextRegex = /\{0\}/gi;
     FancyFileInput.prototype.change = function () {
