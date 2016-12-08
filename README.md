@@ -16,27 +16,34 @@ See the [Confluence Pandoc Connect Kanban board](https://ecosystem.atlassian.net
 
 You'll need the following installed:
 
-- The Haskell Platform, see `confluence-pandoc-connect.cabal` for minimum versions
+- [Stack](https://docs.haskellstack.org/en/stable/README/)
 - libpq development headers
 - PostgreSQL
 
-## Run
+## Build and run
 
-Set up a sandbox and install dependencies:
+1. Build the project:
 
-    make setup
+    stack build
 
-Set up a postgres database:
+2. Set up a postgres database:
 
     cd migrations 
     sh bootstrap.sh
     sh init-db.sh
 
-Run with some local values:
+3. Setup a development environment as per the [Connect instructions](https://developer.atlassian.com/static/connect/docs/latest/developing/developing-locally.html). Use `PORT=8001`.
 
-    CONNECT_BASE_URL="http://localhost:8001" \
+4. Set your ngrok URL in the env:
+
+   export NGROK_URL="https://00000.ngrok.io"
+
+4. Run with some local values, including your ngrok URL:
+
+    stack build && \
+    CONNECT_BASE_URL="${NGROK_URL}" \
     PG_CONFLUENCE_PANDOC_CONNECT_URL="postgres://confluence_pandoc_connect@localhost:5432/confluence_pandoc_connect" \
-    cabal run -- --port 8001 --error-log=- --access-log=-
+    stack exec confluence-pandoc-connect -- --port 8001 --error-log=- --access-log=-
 
 
 # Publishing a new version
