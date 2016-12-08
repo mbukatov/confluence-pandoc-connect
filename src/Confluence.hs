@@ -188,7 +188,7 @@ getUniquePageName originalName spaceKey twu = do
 
 pageExists :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler Bool
 pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) =
-  contentReq >>= either (fail "Failed to talk to Confluence") (return . searchIsEmpty)
+  contentReq >>= either (fail "Failed to talk to Confluence") (return . not . searchIsEmpty)
   where
     contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
     searchIsEmpty :: A.Value -> Bool
