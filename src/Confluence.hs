@@ -235,11 +235,11 @@ readerFromFilename filename =
 hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
 hostPostRequest t uri auth req = HR.hostPostRequest t uri auth req >>= (\r -> logProductError r >> return r)
   where
-    logProductError (Left err) = logError . BC.pack $ show err
+    logProductError (Left err) = logError $ BC.concat ["POST request to ", uri, " failed: ", BC.pack $ show err]
     logProductError _ = return ()
 
 hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
 hostGetRequest t uri auth req = HR.hostGetRequest t uri auth req >>= (\r -> logProductError r >> return r)
   where
-    logProductError (Left err) = logError . BC.pack $ show err
+    logProductError (Left err) = logError $ BC.concat ["GET request to ", uri, " failed: ", BC.pack $ show err]
     logProductError _ = return ()
