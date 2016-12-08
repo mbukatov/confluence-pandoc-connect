@@ -5,4 +5,6 @@ pipelines:
     - step:
         script:
           - stack build --only-dependencies
+    - step:
+        script:
           - stack build
