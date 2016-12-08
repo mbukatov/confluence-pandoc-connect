@@ -176,18 +176,23 @@ pandocToConfluenceStorageFormat :: Pandoc -> IO T.Text
 pandocToConfluenceStorageFormat pandoc = T.pack <$> writeCustom "resources/confluence-storage.lua" def pandoc
 
 getUniquePageName :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler T.Text
-getUniquePageName originalName (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
+getUniquePageName originalName spaceKey twu = do
   number <- getNumber originalName 0
   return $ originalName `T.append` numberSuffix number
   where
-    contentReq name = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
     getNumber :: T.Text -> Integer -> AppHandler Integer
     getNumber name number = do
-      errorOrResponse <- contentReq (name `T.append` numberSuffix number)
-      either (fail "Failed to talk to Confluence") (\val -> if searchIsEmpty val then return number else getNumber name (number + 1)) errorOrResponse
+      needNext <- pageExists (name `T.append` numberSuffix number) spaceKey twu
+      if needNext then getNumber name (number + 1) else return number
+    numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
+
+pageExists :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler Bool
+pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) =
+  contentReq >>= either (fail "Failed to talk to Confluence") (return . searchIsEmpty)
+  where
+    contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
     searchIsEmpty :: A.Value -> Bool
     searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
-    numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
 
 writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat text = do
