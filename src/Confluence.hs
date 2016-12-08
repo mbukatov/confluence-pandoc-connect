@@ -41,6 +41,7 @@ import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Util.FileUploads
 import qualified SnapHelpers                           as SH
+import           System.FilePath
 import           Text.Pandoc
 import           Text.Pandoc.MediaBag
 import           WithToken
@@ -54,7 +55,7 @@ instance A.ToJSON ErrorMessage
 
 data RedirectResponse = RedirectResponse
   { rrPageTitle :: Maybe T.Text
-  , rrUri :: URI
+  , rrUri       :: URI
   } deriving (Show, Eq, Generic)
 instance A.ToJSON RedirectResponse
 
@@ -81,8 +82,8 @@ renderFileForm token (tenant, _) = do
         Nothing -> fail "Required parameter missing"
         Just paramValue -> return $ SH.byteStringToText paramValue
 
-errorResponse :: ErrorMessage -> TenantWithUser -> AppHandler ()
-errorResponse message (tenant, _) = do
+errorResponse :: ErrorMessage -> AppHandler ()
+errorResponse message = do
   putResponse $ setResponseCode SH.badRequest $ emptyResponse
   SH.writeJson message
 
@@ -120,17 +121,17 @@ convertFileFromFormData = do
               )
               errorOrFilePath
         else return Nothing
-    uploadFailed = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage Nothing "Uploading your file to the importer failed. Please try again.")
-    noPermission name = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage name "You don't have permission to create a new page in this space. If you think you should, please contact your administrator.")
+    uploadFailed = errorResponse $ ErrorMessage Nothing "Uploading your file to the importer failed. Please try again."
+    noPermission name = errorResponse $ ErrorMessage name "You don't have permission to create a new page in this space. If you think you should, please contact your administrator."
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
   either (const noReaderFound) runReader $ readerFromFilename filename
   where
     packedFilename = Just . T.pack $ filename
-    noReaderFound = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage packedFilename "Unsupported file format. Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup.")
-    readFailed = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage packedFilename "We couldn't understand your file :(")
-    pageCreateFailed = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage packedFilename "File import failed: Couldn't create a new Confluence page.")
+    noReaderFound = errorResponse $ ErrorMessage packedFilename "Unsupported file format. Please supply a file formatted any of markdown, reStructuredText, textile, HTML, DocBook, LaTeX, MediaWiki markup, TWiki markup, OPML, Emacs Org-Mode, Txt2Tags, Microsoft Word docx, EPUB, or Haddock markup."
+    readFailed = errorResponse $ ErrorMessage packedFilename "We couldn't understand your file :("
+    pageCreateFailed = errorResponse $ ErrorMessage packedFilename "File import failed: Couldn't create a new Confluence page."
 
     runReader (StringReader readerF) = do
       let doRead = readerF def -- def is "default"
@@ -206,25 +207,44 @@ pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) =
 
 writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat text = do
-  maybePageTitle <- getParam "page-title"
-  let decodedMaybePageTitle = E.decodeUtf8 <$> maybePageTitle
+  maybeFilePath <- getParam "page-title"
+  let decodedMaybeFilePath = E.decodeUtf8 <$> maybeFilePath
+      stringFilePath = T.unpack <$> decodedMaybeFilePath
+      maybePageTitle = takeFileName <$> stringFilePath
+      maybePathPrefix = splitPath . dropFileName <$> stringFilePath
   maybeSpaceKey <- getParam "space-key"
+  let spaceKey = ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey
   maybePageIdParam <- getParam "page-selectors"
   let maybePageId = parsePageIdParam maybePageIdParam
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  errorOrResponse <- tenantFromToken $ createPage
-                       (fromMaybe "no title" decodedMaybePageTitle)
-                       text
-                       (ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
-                       maybePageId
+  let pageTitle = fromMaybe "no title" $ T.pack <$> maybePageTitle
+  finalParentPageId <- tenantFromToken $ createParents decodedMaybeFilePath (fromMaybe [] (map T.pack <$> maybePathPrefix)) spaceKey maybePageId
+  errorOrResponse <- tenantFromToken $ createPage pageTitle text spaceKey (join finalParentPageId)
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
-  maybe (return ()) (either (\_ -> return ()) (pageRedirect decodedMaybePageTitle)) errorOrResponse
+  maybe (return ()) (either (\_ -> return ()) (pageRedirect $ E.decodeUtf8 <$> maybeFilePath)) errorOrResponse
   return pageId
   where
-    getPageId :: A.Value -> Maybe PageId
-    getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
     parsePageIdParam :: Maybe BC.ByteString -> Maybe PageId
     parsePageIdParam x = PageId . fst <$> (x >>= BC.readInteger)
+    createParents childName (name : names) spaceKey maybeParentPageId tenantWithUser = do
+      parentExists <- pageExists name spaceKey tenantWithUser
+      if parentExists
+        then return Nothing
+        else do
+          errorOrResponse <- createDirectoryPage name spaceKey maybeParentPageId tenantWithUser
+          either
+            (\e -> (errorResponse $ ErrorMessage childName (HR.perMessage e)) >> return Nothing)
+            (\resp ->
+                maybe
+                  ((errorResponse $ ErrorMessage childName "Failed to create a directory page") >> return Nothing)
+                  (\pageId -> createParents childName names spaceKey (Just pageId) tenantWithUser)
+                  (getPageId resp)
+            )
+            errorOrResponse
+    createParents _ [] _ maybeParentPageId _ = return maybeParentPageId
+
+getPageId :: A.Value -> Maybe PageId
+getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
 
 -- TODO handle error cases properly
 pageRedirect :: Maybe T.Text -> A.Value -> AppHandler ()
@@ -235,7 +255,7 @@ pageRedirect name o =
     link s = links ^? folded . A.key s . A._String
     wu = link "base" <> link "webui" >>= parseURI . T.unpack
     jsRedirect d = SH.writeJson $ RedirectResponse name d
-    noLinkFound = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage Nothing "We couldn't figure out where Confluence created your page, please close the dialog manually.")
+    noLinkFound = errorResponse $ ErrorMessage Nothing "We couldn't figure out where Confluence created your page, please close the dialog manually."
 
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
