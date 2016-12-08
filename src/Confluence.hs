@@ -193,14 +193,24 @@ getUniquePageName originalName spaceKey twu = do
   where
     getNumber :: T.Text -> Integer -> AppHandler Integer
     getNumber name number = do
-      needNext <- pageExists (name `T.append` numberSuffix number) spaceKey twu
+      needNext <- isJust <$> pageExists (name `T.append` numberSuffix number) spaceKey twu
       if needNext then getNumber name (number + 1) else return number
     numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
 
-pageExists :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler Bool
-pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) =
-  contentReq >>= either (fail "Failed to talk to Confluence") (return . not . searchIsEmpty)
+pageExists :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler (Maybe PageId)
+pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
+  resp <- contentReq
+  either
+    (fail "Failed to talk to Confluence")
+    (\v -> do
+        let exists = not . searchIsEmpty $ v
+            pageId = if exists then getResults v >>= getPageId else Nothing
+        return pageId
+    )
+    resp
   where
+    getResults :: A.Value -> Maybe A.Value
+    getResults o = o ^? A.key "results" . A.nth 0
     contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
     searchIsEmpty :: A.Value -> Bool
     searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
@@ -228,15 +238,15 @@ writeConfluenceStorageFormat text = do
     parsePageIdParam x = PageId . fst <$> (x >>= BC.readInteger)
     createParents childName (name : names) spaceKey maybeParentPageId tenantWithUser = do
       parentExists <- pageExists name spaceKey tenantWithUser
-      if parentExists
-        then createParents childName names spaceKey maybeParentPageId tenantWithUser
-        else do
+      case parentExists of
+        Just pageId -> createParents childName names spaceKey (Just pageId) tenantWithUser
+        Nothing -> do
           errorOrResponse <- createDirectoryPage name spaceKey maybeParentPageId tenantWithUser
           either
-            (\e -> (errorResponse $ ErrorMessage childName (HR.perMessage e)) >> return Nothing)
+            (\e -> errorResponse (ErrorMessage childName (HR.perMessage e)) >> return Nothing)
             (\resp ->
                 maybe
-                  ((errorResponse $ ErrorMessage childName "Failed to create a directory page") >> return Nothing)
+                  (errorResponse (ErrorMessage childName "Failed to create a directory page") >> return Nothing)
                   (\pageId -> createParents childName names spaceKey (Just pageId) tenantWithUser)
                   (getPageId resp)
             )
