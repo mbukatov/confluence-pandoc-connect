@@ -229,7 +229,7 @@ writeConfluenceStorageFormat text = do
     createParents childName (name : names) spaceKey maybeParentPageId tenantWithUser = do
       parentExists <- pageExists name spaceKey tenantWithUser
       if parentExists
-        then return Nothing
+        then createParents childName names spaceKey maybeParentPageId tenantWithUser
         else do
           errorOrResponse <- createDirectoryPage name spaceKey maybeParentPageId tenantWithUser
           either
