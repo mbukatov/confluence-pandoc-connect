@@ -2,7 +2,7 @@ flags: {}
 packages:
 - '.'
 - location:
-    git: git@bitbucket.org:ajknoll_atlassian/atlassian-connect-core.git
+    git: https://ajknoll_atlassian@bitbucket.org/ajknoll_atlassian/atlassian-connect-core.git
     commit: 15804576c53ed5b5e64525b416c7df5e5c385462
 extra-deps:
 - atlassian-connect-descriptor-0.4.4.1
