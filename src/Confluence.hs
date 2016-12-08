@@ -81,6 +81,20 @@ createDirectoryPage title spaceKey maybePageId tenantWithUser =
   where
     content = "<p><ac:structured-macro ac:name=\"children\" ac:schema-version=\"2\" /></p>"
 
+getUniquePageName :: T.Text -> ConfluenceTypes.Space -> TenantWithUser -> AppHandler T.Text
+getUniquePageName originalName (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
+  number <- getNumber originalName 0
+  return $ originalName `T.append` numberSuffix number
+  where
+    contentReq name = with connect $ hostGetRequest tenant "/rest/api/content" [] $ HR.setQueryParams [("spaceKey", Just $ E.encodeUtf8 spaceKey), ("title", Just $ E.encodeUtf8 name)]
+    getNumber :: T.Text -> Integer -> AppHandler Integer
+    getNumber name number = do
+      errorOrResponse <- contentReq (name `T.append` numberSuffix number)
+      either (fail "Failed to talk to Confluence") (\val -> if searchIsEmpty val then return number else getNumber name (number + 1)) errorOrResponse
+    searchIsEmpty :: A.Value -> Bool
+    searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
+    numberSuffix number = if number == 0 then "" else T.concat ["(", T.pack . show $ number, ")"]
+
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
   maybeFilenameAndContent : _ <- handleFileUploads
@@ -219,6 +233,12 @@ readerFromFilename filename =
 
 hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
 hostPostRequest t uri auth req = HR.hostPostRequest t uri auth req >>= (\r -> logProductError r >> return r)
+  where
+    logProductError (Left err) = logError . BC.pack $ show err
+    logProductError _ = return ()
+
+hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
+hostGetRequest t uri auth req = HR.hostGetRequest t uri auth req >>= (\r -> logProductError r >> return r)
   where
     logProductError (Left err) = logError . BC.pack $ show err
     logProductError _ = return ()
