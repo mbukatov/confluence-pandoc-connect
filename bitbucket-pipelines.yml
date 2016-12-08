@@ -1,0 +1,8 @@
+image: fpco/stack-build:lts-7.12
+
+pipelines:
+  default:
+    - step:
+        script:
+          - stack build --only-dependencies
+          - stack build
