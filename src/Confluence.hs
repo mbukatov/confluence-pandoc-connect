@@ -180,7 +180,7 @@ getUniquePageName originalName (ConfluenceTypes.Space (Key spaceKey)) (tenant, _
   number <- getNumber originalName 0
   return $ originalName `T.append` numberSuffix number
   where
-    contentReq name = with connect $ hostGetRequest tenant "/rest/api/content" [] $ HR.setQueryParams [("spaceKey", Just $ E.encodeUtf8 spaceKey), ("title", Just $ E.encodeUtf8 name)]
+    contentReq name = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
     getNumber :: T.Text -> Integer -> AppHandler Integer
     getNumber name number = do
       errorOrResponse <- contentReq (name `T.append` numberSuffix number)
