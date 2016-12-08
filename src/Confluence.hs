@@ -32,6 +32,7 @@ import           Network.HTTP.Client                   (Request,
                                                         requestBody)
 import           Network.HTTP.Client.MultipartFormData as MFD
 import           Network.HTTP.Types.Header
+import           Network.URI
 import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest     as HR
@@ -50,6 +51,12 @@ data ErrorMessage = ErrorMessage
   , emMessage   :: T.Text
   } deriving (Show, Eq, Generic)
 instance A.ToJSON ErrorMessage
+
+data RedirectResponse = RedirectResponse
+  { rrPageTitle :: Maybe T.Text
+  , rrUri :: URI
+  } deriving (Show, Eq, Generic)
+instance A.ToJSON RedirectResponse
 
 baseUrlFromTenant :: Tenant -> T.Text
 baseUrlFromTenant = T.pack . show . getURI . baseUrl
@@ -130,9 +137,7 @@ convertFile filename fileContent =
       errorOrReadResult <- liftIO $ doRead . BC.unpack $ fileContent
       either
         (const readFailed)
-        (\pandoc -> do
-            maybePageId <- (liftIO $ pandocToConfluenceStorageFormat pandoc) >>= writeConfluenceStorageFormat
-            maybe pageCreateFailed (\_ -> return ()) maybePageId)
+        (\pandoc -> liftIO (pandocToConfluenceStorageFormat pandoc) >>= writeConfluenceStorageFormat >> return ())
         errorOrReadResult
 
     runReader (ByteStringReader readerF) = do
@@ -202,17 +207,18 @@ pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) =
 writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat text = do
   maybePageTitle <- getParam "page-title"
+  let decodedMaybePageTitle = E.decodeUtf8 <$> maybePageTitle
   maybeSpaceKey <- getParam "space-key"
   maybePageIdParam <- getParam "page-selectors"
   let maybePageId = parsePageIdParam maybePageIdParam
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
   errorOrResponse <- tenantFromToken $ createPage
-                       (E.decodeUtf8 $ fromMaybe "no title" maybePageTitle)
+                       (fromMaybe "no title" decodedMaybePageTitle)
                        text
                        (ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey)
                        maybePageId
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
-  maybe (return ()) (either (\_ -> return ()) pageRedirect) errorOrResponse
+  maybe (return ()) (either (\_ -> return ()) (pageRedirect decodedMaybePageTitle)) errorOrResponse
   return pageId
   where
     getPageId :: A.Value -> Maybe PageId
@@ -221,15 +227,14 @@ writeConfluenceStorageFormat text = do
     parsePageIdParam x = PageId . fst <$> (x >>= BC.readInteger)
 
 -- TODO handle error cases properly
-pageRedirect :: A.Value -> AppHandler ()
-pageRedirect o =
+pageRedirect :: Maybe T.Text -> A.Value -> AppHandler ()
+pageRedirect name o =
   maybe noLinkFound jsRedirect wu
   where
     links = o ^? A.key "_links"
     link s = links ^? folded . A.key s . A._String
-    wu = link "base" <> link "webui"
-    jsRedirect d =
-      heistLocal (I.bindStrings $ "destination" ## d) $ render "page_redirect_dialog"
+    wu = link "base" <> link "webui" >>= parseURI . T.unpack
+    jsRedirect d = SH.writeJson $ RedirectResponse name d
     noLinkFound = fromJust <$> tenantFromToken (errorResponse $ ErrorMessage Nothing "We couldn't figure out where Confluence created your page, please close the dialog manually.")
 
 readerFromFilename :: String -> Either String Reader
