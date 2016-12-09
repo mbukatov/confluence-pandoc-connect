@@ -149,7 +149,8 @@
             radioPageSelectorRoot = document.getElementById('page-selector-root'),
             userSelectedPageUnderRoot = null,
             totalFiles = 0,
-            filesDone = 0;
+    filesDone = 0,
+    files = [];
     select.value = currentSpaceKey;
 
     (function() {
@@ -232,11 +233,14 @@
         document.getElementById('content1').style.display = 'block';
         select.disabled = false;
 
-        var files = $.merge( $.merge( [], document.getElementById('file-upload').files ), document.getElementById('file-upload1').files );
+        files = $.merge( $.merge( [], document.getElementById('file-upload').files ), document.getElementById('file-upload1').files );
         totalFiles = files.length;
         document.getElementById('total-files').innerHTML = totalFiles;
-        for (var i = 0; i < totalFiles; i++) {
+        sendData();
+    }
 
+    function sendData() {
+            var i = filesDone;
             var pagename = files[i].webkitRelativePath.substr(0, files[i].webkitRelativePath.lastIndexOf('.'));
             if (pagename.indexOf('/') < 0) {
                 pagename = files[i].name.substr(0, files[i].name.lastIndexOf('.'));
@@ -255,9 +259,7 @@
             formData.append('page-title', pagename);
 
             oReq.send(formData);
-        }
     }
-
     function requestDone() {
         console.log(this.responseText);
         var response = JSON.parse(this.responseText);
@@ -277,10 +279,14 @@
                     response.emPageTitle +
                     ' failed to be uploaded</li>';
         }
+
         AJS.progressBars.update("#progress", filesDone / totalFiles);
         if (filesDone === totalFiles) {
             AP.Dialog.getButton('cancel').disable();
+        } else {
+            sendData();
         }
+
     }
 
     function redirect(url) {
