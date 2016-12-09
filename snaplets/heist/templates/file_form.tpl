@@ -45,6 +45,8 @@
     <link rel="stylesheet" type="text/css" href="//aui-cdn.atlassian.com/aui-adg/6.0.3/css/aui.css"/>
     <link rel="stylesheet" type="text/css" href="//aui-cdn.atlassian.com/aui-adg/6.0.3/css/aui-experimental.css"/>
     <script src="${productBaseUrl}/atlassian-connect/all.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 </head>
 <body>
 <section id="content" class="ac-content">
@@ -68,7 +70,7 @@
                            name="page-selectors" id="page-selector-root" value="root" onclick="checkRadio()">
                 </div>
                 <br>
-                <select class="select" id="space-key" name="space-key" onchange="spaceKeyChanged();"></select>
+                <input class="select" id="space-key" name="space-key" onchange="spaceKeyChanged();">
             </fieldset>
         <br>
         <br>
@@ -135,6 +137,7 @@
         this.fireEvent('value-changed');
     };
 
+    var availableTags = [];
 
     var currentSpaceKey = document.getElementById('current-space-key').value,
             select = document.getElementById('space-key'),
@@ -171,9 +174,8 @@
                if(results[i].key == currentSpaceKey) {
                    option.selected = 'selected';
                }
-               select.add(option);
+               availableTags.push(option.text);
              }
-//               AJS.$("#space-key").auiSelect2({tags:select});
            }
          });
 
@@ -277,15 +279,16 @@
     function redirect(url) {
         parent.location = url;
     }
-//    $(function(){
-//        $('input[type=file]').fancyFileInput();
-//    });
-
 
     $('input[type=file]').fancyFileInput({
         multipleFileTextPattern: "{0} files" // Shown when multiple files are chosen
     });
 
+    $( function() {
+        $( "#space-key" ).autocomplete({
+            source: availableTags
+        });
+    } );
      </script>
  </body>
 </html>
