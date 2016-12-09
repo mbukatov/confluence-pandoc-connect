@@ -34,6 +34,10 @@
             position: absolute;
             left: 20px;
         }
+        #space-key {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
     </style>
     <link rel="stylesheet" href="//aui-cdn.atlassian.com/aui-adg/5.4.3/css/aui.css" media="all">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
@@ -69,7 +73,7 @@
                     <input class="radio" type="radio"
                            name="page-selectors" id="page-selector-root" value="root" onclick="checkRadio()">
                 </div>
-                <br>
+
                 <input class="select" id="space-key" name="space-key" onchange="spaceKeyChanged();">
             </fieldset>
         <br>
@@ -234,6 +238,9 @@
         for (var i = 0; i < totalFiles; i++) {
 
             var pagename = files[i].webkitRelativePath.substr(0, files[i].webkitRelativePath.lastIndexOf('.'));
+            if (pagename.indexOf('/') < 0) {
+                pagename = files[i].name.substr(0, files[i].name.lastIndexOf('.'));
+            }
 
             var oReq = new XMLHttpRequest();
             oReq.open("POST", "/create", true);
