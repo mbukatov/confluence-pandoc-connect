@@ -86,7 +86,7 @@ MAINTAINER Avi Knoll <aknoll@atlassian.com>
 EXPOSE 8080
 
 # Install Java
-RUN apt-get update && apt-get install -y openjdk-7-jre-headless
+RUN apt-get update && apt-get install -y openjdk-9-jre-headless
 
 # Install static files
 COPY snaplets /service/snaplets
