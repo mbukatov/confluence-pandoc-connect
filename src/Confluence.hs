@@ -221,7 +221,7 @@ writeConfluenceStorageFormat text = do
   let decodedMaybeFilePath = E.decodeUtf8 <$> maybeFilePath
       stringFilePath = T.unpack <$> decodedMaybeFilePath
       maybePageTitle = takeFileName <$> stringFilePath
-      maybePathPrefix = splitPath . dropFileName . normalise <$> stringFilePath
+      maybePathPrefix = splitPath . dropFileNameNoDotSlash . normalise <$> stringFilePath
   maybeSpaceKey <- getParam "space-key"
   let spaceKey = ConfluenceTypes.Space . Key . E.decodeUtf8 $ fromMaybe "" maybeSpaceKey
   maybePageIdParam <- getParam "page-selectors"
@@ -252,6 +252,7 @@ writeConfluenceStorageFormat text = do
             )
             errorOrResponse
     createParents _ [] _ maybeParentPageId _ = return maybeParentPageId
+    dropFileNameNoDotSlash s = let dropped = dropFileName s in if dropped == "./" then "" else dropped
 
 getPageId :: A.Value -> Maybe PageId
 getPageId o = PageId <$> o ^? A.key "id" . A._String . unpacked . _Show
