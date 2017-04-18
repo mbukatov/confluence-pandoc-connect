@@ -1,5 +1,5 @@
 name:                confluence-pandoc-connect
-version:             0.2.0.0
+version:             0.3.0.0
 synopsis:            Import documents into Confluence with Pandoc.
 -- description:         
 license:             GPL
@@ -37,13 +37,13 @@ Executable confluence-pandoc-connect
     , jwt
     , lens
     , lens-aeson
-    , MonadCatchIO-transformers
+    , map-syntax
     , mtl
     , network-uri
     , pandoc
     , postgresql-simple
     , process
-    , resource-pool-catchio
+    , resource-pool
     , split
     , snap
     , snap-core
