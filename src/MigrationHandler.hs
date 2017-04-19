@@ -10,11 +10,9 @@ import qualified Data.ByteString.Char8  as BSC
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as E
 import qualified EnvironmentHelpers     as DE
-import           Finder
 import           Key
 import qualified Snap.Core              as SC
 import qualified SnapHelpers            as SH
-import           System.FilePath        ((</>))
 import           System.Process         (callProcess)
 import           Text.Read              (readMaybe)
 
@@ -43,15 +41,12 @@ handleFlywayMigrate = either (SH.respondWithError SH.badRequest) (liftIO . flywa
 
 flywayMigrate :: FlywayOptions -> IO ()
 flywayMigrate options = do
-   potentialFlywayPath <- findFile addFlywayPath
-   case potentialFlywayPath of
+   maybeFlywayPath <- DE.getEnv "FLYWAY_PATH"
+   case maybeFlywayPath of
       Just flywayPath -> callProcess flywayPath migrationArguments
-      Nothing -> fail "Could not find the flyway executable relative to the running executables path."
+      Nothing -> fail "Missing environment variable FLYWAY_PATH"
    where
       migrationArguments = "migrate" : flywayOptionsToArguments options
-
-addFlywayPath :: FilePath -> FilePath
-addFlywayPath f = f </> "migrations" </> "flyway"
 
 getFlywayOptions :: AppHandler (Either String FlywayOptions)
 getFlywayOptions = do
