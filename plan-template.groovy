@@ -92,6 +92,7 @@ RUN apt-get update && apt-get install -y openjdk-9-jre-headless
 COPY snaplets /service/snaplets
 COPY resources /service/resources
 COPY migrations /service/migrations
+ENV FLYWAY_PATH /service/migrations/flyway
 COPY static /service/static
 
 # Copy and run binary
