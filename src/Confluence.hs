@@ -23,7 +23,6 @@ import qualified Data.Text                             as T
 import qualified Data.Text.Encoding                    as E
 import           Data.Text.Lens                        (unpacked)
 import           GHC.Generics
-import           Heist
 import qualified Heist.Interpreted                     as I
 import           JsonRpc
 import           Key
@@ -95,34 +94,37 @@ createDirectoryPage title spaceKey maybePageId tenantWithUser =
 
 convertFileFromFormData :: AppHandler ()
 convertFileFromFormData = do
-  maybeFilenameAndContent : _ <- handleFileUploads
+  filenameAndContentOrError : _ <- handleFileUploads
     "/tmp"
     uploadPolicy
-    (const $ allowWithMaximumSize (getMaximumFormInputSize defaultUploadPolicy))
+    (const $ allowWithMaximumSize (getMaximumFormInputSize uploadPolicy))
     handlePart
 
   maybeSpaceKey <- getParam "space-key"
   let maybeSpaceKey' = ConfluenceTypes.Space . Key . E.decodeUtf8 <$> maybeSpaceKey
   canCreate <- maybe (fail "No space key?!") (tenantFromToken . userCanCreatePage) maybeSpaceKey'
   if fromMaybe False canCreate
-     then maybe uploadFailed (\(filename, fileContent) -> convertFile filename fileContent) maybeFilenameAndContent
-     else (noPermission (T.pack . fst <$> maybeFilenameAndContent))
+     then either uploadFailed (uncurry convertFile) filenameAndContentOrError
+     else noPermission (T.pack . fst <$> filenameAndContentOrError)
   where
-    uploadPolicy = setMaximumFormInputSize maxFileSize defaultUploadPolicy
+    uploadPolicy = setMaximumFormInputSize maxFileSize (setMaximumFormInputSize maxFileSize defaultUploadPolicy)
     maxFileSize = 100000000 -- 100 MB
-    handlePart fileInfo errorOrFilePath = do
+    handlePart fileInfo errorOrFilePath =
       if partFieldName fileInfo == "file-upload"
         then
             either
-              (\_ -> return Nothing)
+              (return . Left . policyViolationExceptionReason)
               (\filePath -> do
                 fileContent <- BS.readFile filePath
-                return . Just $ (BC.unpack . fromMaybe "empty file" $ partFileName fileInfo, fileContent)
+                return . Right $ (BC.unpack . fromMaybe "empty file" $ partFileName fileInfo, fileContent)
               )
               errorOrFilePath
-        else return Nothing
-    uploadFailed = errorResponse $ ErrorMessage Nothing "Uploading your file to the importer failed. Please try again."
-    noPermission name = errorResponse $ ErrorMessage name "You don't have permission to create a new page in this space. If you think you should, please contact your administrator."
+        else
+          return $ Left "Missing file-upload field in request"
+    uploadFailed reason = errorResponse $ ErrorMessage Nothing $
+      "Uploading your file to the importer failed. Please try again.\n\nError: " `T.append` reason
+    noPermission name = errorResponse $ ErrorMessage (either (const Nothing) Just name)
+      "You don't have permission to create a new page in this space. If you think you should, please contact your administrator."
 
 convertFile :: String -> BS.ByteString -> AppHandler ()
 convertFile filename fileContent =
