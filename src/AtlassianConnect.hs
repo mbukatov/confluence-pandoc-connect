@@ -21,7 +21,7 @@ atlassianHomepage = fromJust $ parseURI "http://www.atlassian.com/"
 addonDescriptor :: ConnectFeatures -> Plugin
 addonDescriptor cf =
   basePlugin
-    { pluginName      = Just . Name $ "Confluence Pandoc Connect"
+    { pluginName      = Just . Name $ "Confluence universal importer"
     , pluginDescription  = Just "Import files into Confluence with the Pandoc document converter."
     , vendor         = Just $ Vendor (Name "Atlassian") atlassianHomepage
     , lifecycle = Just $ defaultLifecycle

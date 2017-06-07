@@ -3,7 +3,7 @@ import System.Environment
 serviceDescriptor :: String -> String
 serviceDescriptor version = "{\n\
 \   \"description\": \"Import files and stuff\",\n\
-\   \"name\": \"Confluence Pandoc Connect\",\n\
+\   \"name\": \"Confluence universal importer\",\n\
 \   \"organization\": \"CISO-Identity\",\n\
 \   \"externalAccess\": true,\n\
 \   \"resources\": [{\n\
