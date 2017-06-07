@@ -1,4 +1,4 @@
-# Confluence Pandoc Connect
+# Confluence universal importer
 
 Import files into [Confluence](https://www.atlassian.com/software/confluence)
 with the power of [Pandoc](http://pandoc.org/).
@@ -8,7 +8,7 @@ This is an [Atlassian Connect](http://connect.atlassian.com/) add-on written in
 
 ## Issue tracking
 
-See the [Confluence Pandoc Connect Kanban board](https://ecosystem.atlassian.net/secure/RapidBoard.jspa?rapidView=231).
+See the [Confluence universal importer Kanban board](https://ecosystem.atlassian.net/secure/RapidBoard.jspa?rapidView=231).
 
 # Running locally for development
 
