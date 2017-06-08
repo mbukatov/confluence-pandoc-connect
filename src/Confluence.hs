@@ -212,9 +212,10 @@ pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
   where
     getResults :: A.Value -> Maybe A.Value
     getResults o = o ^? A.key "results" . A.nth 0
-    contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", E.encodeUtf8 spaceKey, "&title=", E.encodeUtf8 name]) [] mempty
+    contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", encodeParam spaceKey, "&title=", encodeParam name]) [] mempty
     searchIsEmpty :: A.Value -> Bool
     searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
+    encodeParam = E.encodeUtf8 . T.pack . (escapeURIString isUnescapedInURIComponent) . T.unpack
 
 writeConfluenceStorageFormat :: T.Text -> AppHandler (Maybe PageId)
 writeConfluenceStorageFormat text = do
