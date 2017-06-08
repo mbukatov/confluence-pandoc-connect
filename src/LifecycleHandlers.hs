@@ -27,7 +27,7 @@ standardHandlers =
   , ("/uninstalled"        , uninstalledHandler)
   ]
 
-installedHandler :: AC.HasConnect (SS.Handler b App) => SS.Handler b App ()
+installedHandler :: SS.Handler b App ()
 installedHandler = maybe SH.respondBadRequest installedHandlerWithTenant =<< AC.getLifecycleResponse
 
 installedHandlerWithTenant :: AC.LifecycleResponse -> SS.Handler b App ()
@@ -40,7 +40,7 @@ installedHandlerWithTenant tenantInfo = do
       tenantInsertionFailedResponse = SH.respondWithError SH.unauthorised "Failed to insert the new tenant. Not a valid host or the tenant information was invalid."
       domainNotSupportedResponse = SH.respondWithError SH.unauthorised $ "Your domain is not supported by this addon. Please contact the developers. " ++ (show . tenantAuthority $ tenantInfo)
 
-insertTenantInfo :: AC.HasConnect (SS.Handler b App) => AC.LifecycleResponse -> SS.Handler b App (Maybe Integer)
+insertTenantInfo :: AC.LifecycleResponse -> SS.Handler b App (Maybe Integer)
 insertTenantInfo info = withMaybeTenant $ \mt -> SS.with db $ withConnection (\conn -> PT.insertTenantInformation conn (fst <$> mt) info)
 
 validHostName:: [AC.HostName] -> AC.LifecycleResponse -> Bool
@@ -54,7 +54,7 @@ validHostName validHosts tenantInfo = isJust maybeValidhost
 tenantAuthority :: AC.LifecycleResponse -> Maybe NU.URIAuth
 tenantAuthority = NU.uriAuthority . AC.getURI . AC.lrBaseUrl
 
-uninstalledHandler :: AC.HasConnect (SS.Handler b App) => SS.Handler b App ()
+uninstalledHandler :: SS.Handler b App ()
 uninstalledHandler = do
    mTenantInfo <- AC.getLifecycleResponse
    maybe SH.respondBadRequest uninstalledHandlerWithTenant mTenantInfo
