@@ -154,21 +154,27 @@ convertFile filename fileContent =
         )
         errorOrReadResult
 
-uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
+uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse ())
 uploadMedia (PageId pageId) mediaBag (tenant, _) = do
   boundary <- liftIO webkitBoundary
-  body <- liftIO $ renderParts boundary parts'
-  let request = hostPostRequest tenant (BC.pack attachmentUrl) []
-                    $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
-                      HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
-                      Endo (\r -> r { requestBody = body })
-  with connect request
+  case parts' of
+    [] -> return $ Right ()
+    _ -> do
+      body <- liftIO $ renderParts boundary parts'
+      resp <- with connect $ hostPostRequest tenant (BC.pack attachmentUrl) []
+                        $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
+                          HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
+                          Endo (\r -> r { requestBody = body })
+      return $ either correctJsonParseFailure Right resp
   where
     attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/child/attachment"
     allFiles = mapMaybe (\(path', _, _) -> (\(f, s) -> (path', f, s)) <$> lookupMedia path' mediaBag) (mediaDirectory mediaBag)
     partTransform (path', mime, content) =
       (partFileRequestBody "file" path' $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
     parts' = map partTransform allFiles
+    correctJsonParseFailure per@(HR.ProductErrorResponse code _)
+      | code >= 200 && code < 300 = Right ()
+      | True = Left per
 
 createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
 createPage filename fileContent spaceKey maybePageId twu@(tenant, _) = do
