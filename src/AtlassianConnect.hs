@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Strict            #-}
 
 module AtlassianConnect
   ( addonDescriptor
@@ -6,10 +7,11 @@ module AtlassianConnect
   ) where
 
 import           Data.Connect.Descriptor
-import qualified Data.HashMap.Strict     as HM
+import qualified Data.HashMap.Strict                   as HM
 import           Data.Maybe
-import           Data.Text               as T
+import           Data.Text                             as T
 import           Network.URI
+import           Prelude
 
 data ConnectFeatures = ConnectFeatures
   { webItemDisplayEnabled :: Bool

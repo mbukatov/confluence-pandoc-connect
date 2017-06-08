@@ -3,9 +3,9 @@ packages:
 - '.'
 - location:
     git: https://ajknoll_atlassian@bitbucket.org/ajknoll_atlassian/atlassian-connect-core.git
-    commit: 15804576c53ed5b5e64525b416c7df5e5c385462
+    commit: 0bfd939a17208e0169895b37b347001c71e4ca22
 extra-deps:
-- atlassian-connect-descriptor-0.4.4.1
+- atlassian-connect-descriptor-0.4.5.0
 - heist-1.0.1.0
 - http-types-0.8.6
 - map-syntax-0.2.0.1

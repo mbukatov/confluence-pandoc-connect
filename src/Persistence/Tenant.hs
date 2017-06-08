@@ -35,7 +35,7 @@ lookupTenant conn clientKey = do
    -- TODO Can we extract these SQL statements into their own constants so that we can
    -- just re-use them elsewhere?
    tenants <- liftIO $ query conn [sql|
-      SELECT id, key, publicKey, sharedSecret, baseUrl, productType
+      SELECT id, key, publicKey, oauthClientId, sharedSecret, baseUrl, productType
           FROM tenant
           WHERE key = ?
       |]
@@ -108,9 +108,9 @@ updateTenantDetails tenant conn =
 rawInsertTenantInformation :: Connection -> AC.LifecycleResponse -> IO [Integer]
 rawInsertTenantInformation conn lri@AC.LifecycleResponseInstalled{} =
    fmap join . liftIO $ query conn [sql|
-      INSERT INTO tenant (key, publicKey, sharedSecret, baseUrl, productType)
-      VALUES (?, ?, ?, ?, ?) RETURNING id
-   |] (AC.lrClientKey lri, AC.lrPublicKey lri, AC.lrSharedSecret lri, show $ AC.lrBaseUrl lri, AC.lrProductType lri)
+      INSERT INTO tenant (key, publicKey, oauthClientId, sharedSecret, baseUrl, productType)
+      VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+   |] (AC.lrClientKey lri, AC.lrPublicKey lri, Nothing :: Maybe T.Text, AC.lrSharedSecret lri, show $ AC.lrBaseUrl lri, AC.lrProductType lri)
 
 getClientKeyForBaseUrl :: Connection -> URI -> IO (Maybe AC.ClientKey)
 getClientKeyForBaseUrl conn baseUrl = do
@@ -162,7 +162,7 @@ purgeTenants beforeTime conn = liftIO $ execute conn [sql|
 findTenantsByBaseUrl :: T.Text -> Connection -> IO [AC.Tenant]
 findTenantsByBaseUrl uri conn =
    liftIO $ query conn [sql|
-      SELECT id, key, publicKey, sharedSecret, baseUrl, productType
+      SELECT id, key, publicKey, oauthClientId, sharedSecret, baseUrl, productType
       FROM tenant
       WHERE baseUrl like ?
    |] (Only . surroundLike $ uri)

@@ -32,7 +32,7 @@ withTenant tenantApply = do
         Left result -> SH.respondPlainWithError SH.badRequest result >> return Nothing
         Right tenant -> Just <$> tenantApply tenant
 
-withMaybeTenant :: AC.HasConnect (Handler b App) => (Maybe AC.TenantWithUser -> Handler b App (Maybe a)) -> Handler b App (Maybe a)
+withMaybeTenant :: (Maybe AC.TenantWithUser -> Handler b App (Maybe a)) -> Handler b App (Maybe a)
 withMaybeTenant tenantApply = do
   parsed <- sequence [getJWTTokenFromParam, getJWTTokenFromAuthHeader]
   case firstRightOrLefts parsed of

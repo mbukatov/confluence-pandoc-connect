@@ -26,8 +26,7 @@ import           GHC.Generics
 import qualified Heist.Interpreted                     as I
 import           JsonRpc
 import           Key
-import           Network.HTTP.Client                   (Request,
-                                                        RequestBody (..),
+import           Network.HTTP.Client                   (RequestBody (..),
                                                         requestBody)
 import           Network.HTTP.Client.MultipartFormData as MFD
 import           Network.HTTP.Types.Header
@@ -78,7 +77,7 @@ renderFileForm token (tenant, _) = do
     paramValueFromUrl name = do
       maybeValue <- SC.getParam name
       case maybeValue of
-        Nothing -> fail "Required parameter missing"
+        Nothing         -> fail "Required parameter missing"
         Just paramValue -> return $ SH.byteStringToText paramValue
 
 errorResponse :: ErrorMessage -> AppHandler ()
@@ -156,9 +155,9 @@ convertFile filename fileContent =
         errorOrReadResult
 
 uploadMedia :: PageId -> MediaBag -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
+uploadMedia (PageId pageId) mediaBag (tenant, _) = do
   boundary <- liftIO webkitBoundary
-  body <- liftIO $ renderParts boundary parts
+  body <- liftIO $ renderParts boundary parts'
   let request = hostPostRequest tenant (BC.pack attachmentUrl) []
                     $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
                       HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
@@ -166,13 +165,13 @@ uploadMedia (PageId pageId) mediaBag (tenant, maybeUser) = do
   with connect request
   where
     attachmentUrl = "/rest/api/content/" ++ show pageId ++ "/child/attachment"
-    allFiles = mapMaybe (\(path, _, _) -> (\(f, s) -> (path, f, s)) <$> lookupMedia path mediaBag) (mediaDirectory mediaBag)
-    partTransform (path, mime, content) =
-      (partFileRequestBody "file" path $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
-    parts = map partTransform allFiles
+    allFiles = mapMaybe (\(path', _, _) -> (\(f, s) -> (path', f, s)) <$> lookupMedia path' mediaBag) (mediaDirectory mediaBag)
+    partTransform (path', mime, content) =
+      (partFileRequestBody "file" path' $ RequestBodyLBS content) { MFD.partContentType = Just $ BC.pack mime }
+    parts' = map partTransform allFiles
 
 createPage :: T.Text -> T.Text -> ConfluenceTypes.Space -> Maybe ConfluenceTypes.PageId -> TenantWithUser -> AppHandler (Either HR.ProductErrorResponse A.Value)
-createPage filename fileContent spaceKey maybePageId twu@(tenant, maybeUser) = do
+createPage filename fileContent spaceKey maybePageId twu@(tenant, _) = do
   pageTitle_ <- getUniquePageName filename spaceKey twu
   let requestBody_ = A.encode PageDetails
                       { pageType = Page
@@ -229,9 +228,9 @@ writeConfluenceStorageFormat text = do
   maybePageIdParam <- getParam "page-selectors"
   let maybePageId = parsePageIdParam maybePageIdParam
   putResponse $ setResponseCode 200 $ setContentType "text/html" emptyResponse
-  let pageTitle = fromMaybe "no title" $ T.pack <$> maybePageTitle
+  let pageTitle' = fromMaybe "no title" $ T.pack <$> maybePageTitle
   finalParentPageId <- tenantFromToken $ createParents decodedMaybeFilePath (fromMaybe [] (map T.pack <$> maybePathPrefix)) spaceKey maybePageId
-  errorOrResponse <- tenantFromToken $ createPage pageTitle text spaceKey (join finalParentPageId)
+  errorOrResponse <- tenantFromToken $ createPage pageTitle' text spaceKey (join finalParentPageId)
   let pageId = join $ traverse (either (const Nothing) getPageId) errorOrResponse
   maybe (return ()) (either (\_ -> return ()) (pageRedirect $ E.decodeUtf8 <$> maybeFilePath)) errorOrResponse
   return pageId
@@ -273,21 +272,10 @@ pageRedirect name o =
 readerFromFilename :: String -> Either String Reader
 readerFromFilename filename =
   getReader $ case suffix of
-    "md" -> "markdown"
+    "md"  -> "markdown"
     "tex" -> "latex"
-    "mw" -> "mediawiki"
-    _ -> suffix
+    "mw"  -> "mediawiki"
+    _     -> suffix
   where
     suffix = reverse $ takeWhile ('.' /=) $ reverse filename
 
-hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
-hostPostRequest t uri auth req = HR.hostPostRequest t uri auth req >>= (\r -> logProductError r >> return r)
-  where
-    logProductError (Left err) = logError $ BC.concat ["POST request to ", uri, " failed: ", BC.pack $ show err]
-    logProductError _ = return ()
-
-hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
-hostGetRequest t uri auth req = HR.hostGetRequest t uri auth req >>= (\r -> logProductError r >> return r)
-  where
-    logProductError (Left err) = logError $ BC.concat ["GET request to ", uri, " failed: ", BC.pack $ show err]
-    logProductError _ = return ()
