@@ -47,7 +47,7 @@ addonKeySuffix = "-confluence-pandoc-connect"
 importDocumentMenuItem :: ConnectFeatures -> WebItem
 importDocumentMenuItem cf = WebItem
   { wiKey = suffix "import-document"
-  , wiName = simpleText "Import from file"
+  , wiName = simpleText "Convert files to Confluence pages"
   , wiLocation = "system.content.action"
   , wiUrl = "/create?content.id={content.id}&space.key={space.key}"
   , wiTooltip = Nothing
