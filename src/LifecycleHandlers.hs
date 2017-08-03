@@ -1,22 +1,25 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 module LifecycleHandlers
     ( lifecycleRoutes
     , validHostName
     ) where
 
 import           Application
-import qualified Control.Arrow          as ARO
-import qualified Data.ByteString.Char8  as BC
-import           Data.List              (find)
-import           Data.Maybe             (isJust)
-import qualified Data.Text              as T
-import qualified Network.URI            as NU
+import qualified Control.Arrow              as ARO
+import qualified Data.ByteString.Char8      as BC
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import           Data.List                  (find)
+import           Data.Maybe                 (isJust)
+import qualified Data.Text                  as T
+import qualified Network.URI                as NU
 import           Persistence.PostgreSQL
-import qualified Persistence.Tenant     as PT
-import qualified Snap.AtlassianConnect  as AC
-import qualified Snap.Snaplet           as SS
-import qualified SnapHelpers            as SH
-import           TenantJWT              (withMaybeTenant)
+import qualified Persistence.Tenant         as PT
+import qualified Snap.AtlassianConnect      as AC
+import qualified Snap.Core                  as SC
+import qualified Snap.Snaplet               as SS
+import qualified SnapHelpers                as SH
+import           TenantJWT                  (withMaybeTenant)
 
 lifecycleRoutes :: [(BC.ByteString, SS.Handler App App ())]
 lifecycleRoutes = fmap (ARO.first BC.pack) standardHandlers
@@ -28,7 +31,9 @@ standardHandlers =
   ]
 
 installedHandler :: SS.Handler b App ()
-installedHandler = maybe SH.respondBadRequest installedHandlerWithTenant =<< AC.getLifecycleResponse
+installedHandler = do
+  lr <- AC.getLifecycleResponse
+  maybe lifecycleResponseErrorResponse installedHandlerWithTenant lr
 
 installedHandlerWithTenant :: AC.LifecycleResponse -> SS.Handler b App ()
 installedHandlerWithTenant tenantInfo = do
@@ -57,7 +62,7 @@ tenantAuthority = NU.uriAuthority . AC.getURI . AC.lrBaseUrl
 uninstalledHandler :: SS.Handler b App ()
 uninstalledHandler = do
    mTenantInfo <- AC.getLifecycleResponse
-   maybe SH.respondBadRequest uninstalledHandlerWithTenant mTenantInfo
+   maybe lifecycleResponseErrorResponse uninstalledHandlerWithTenant mTenantInfo
 
 uninstalledHandlerWithTenant :: AC.LifecycleResponse -> SS.Handler b App ()
 uninstalledHandlerWithTenant tenantInfo = do
@@ -65,3 +70,9 @@ uninstalledHandlerWithTenant tenantInfo = do
    case potentialTenant of
       Nothing -> SH.respondWithError SH.notFound "Tried to uninstall a tenant that did not even exist."
       Just tenant -> withConnection (PT.hibernateTenant tenant) >> SH.respondNoContent
+
+lifecycleResponseErrorResponse :: SS.Handler b App ()
+lifecycleResponseErrorResponse = do
+  badBody <- SC.readRequestBody (1024 * 10)
+  SC.logError $ "Failed to parse lifecycle response: " `BC.append` BLC.toStrict badBody
+  SH.respondBadRequest
