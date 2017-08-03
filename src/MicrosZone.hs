@@ -20,13 +20,26 @@ data Zone = Dev | Dog | Prod
 zoneFromString :: String -> Maybe Zone
 -- Development environments
 zoneFromString "domain.dev.atlassian.io" = Just Dev
+zoneFromString "ap-southeast-2.dev.public.atl-paas.net" = Just Dev
 -- Dogfooding environments
 zoneFromString "app.dev.atlassian.io" = Just Dog
+zoneFromString "--app.ap-southeast-2.dev.public.atl-paas.net" = Just Dog
+zoneFromString "--app.us-west-2.dev.public.atl-paas.net" = Just Dog
 zoneFromString "useast.staging.atlassian.io" = Just Dog
 zoneFromString "uswest.staging.atlassian.io"  = Just Dog
+zoneFromString "us-east-1.staging.public.atl-paas.net" = Just Dog
+zoneFromString "us-west-1.staging.public.atl-paas.net" = Just Dog
+zoneFromString "us-west-2.staging.public.atl-paas.net" = Just Dog
+zoneFromString "eu-west-1-beta.staging.public.atl-paas.net" = Just Dog
+zoneFromString "eu-west-1.staging.public.atl-paas.net" = Just Dog
 -- Production environments
 zoneFromString "useast.atlassian.io" = Just Prod
 zoneFromString "uswest.atlassian.io"  = Just Prod
+zoneFromString "us-east-1.prod.public.atl-paas.net" = Just Prod
+zoneFromString "us-west-1.prod.public.atl-paas.net" = Just Prod
+zoneFromString "us-west-2.prod.public.atl-paas.net" = Just Prod
+zoneFromString "eu-west-1-beta.prod.public.atl-paas.net" = Just Prod
+zoneFromString "eu-west-1.prod.public.atl-paas.net" = Just Prod
 
 zoneFromString _        = Nothing
 
