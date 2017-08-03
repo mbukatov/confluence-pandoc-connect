@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 module SnapHelpers where
 
 import qualified Control.Applicative    as CA
@@ -54,7 +55,9 @@ data ErrorResponse = ErrorResponse
 instance ToJSON ErrorResponse
 
 respondWithError :: SC.MonadSnap m => Int -> String -> m ()
-respondWithError errorCode response = respondWithErrors errorCode [response]
+respondWithError errorCode response = do
+  logErrorS $ "status: " ++ show errorCode ++ ", message: " ++ response
+  respondWithErrors errorCode [response]
 
 respondWithErrors :: SC.MonadSnap m => Int -> [String] -> m ()
 respondWithErrors errorCode responses = do
@@ -65,10 +68,11 @@ respondWithErrors errorCode responses = do
 
 respondPlainWithError :: SC.MonadSnap m => Int -> String -> m ()
 respondPlainWithError errorCode response = do
+  logErrorS $ "status: " ++ show errorCode ++ ", message: " ++ response
   SC.writeBS . BSC.pack $ response
   respondWith errorCode
 
-logErrorS :: String -> SS.Handler a b ()
+logErrorS :: SC.MonadSnap m => String -> m ()
 logErrorS = SC.logError . BSC.pack
 
 getTimestampOrCurrentTime :: SS.Handler a b UTCTime
