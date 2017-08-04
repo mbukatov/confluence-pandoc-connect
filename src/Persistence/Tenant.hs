@@ -81,7 +81,8 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
       -- We have never seen this baseUrl and nobody is using that key: brand new tenant, insert
       (Nothing, Nothing, _) -> do
         putStrLn $ "INFO inserting new tenant: " ++ show newBaseUri
-        listToMaybe <$> rawInsertTenantInformation conn lri
+        resultI64 <- rawInsertTenantInformation conn lri
+        return . Just $ toInteger resultI64
       -- We have seen this tenant before but we may have new information for it. Update it.
       (Just tenant, _, Just claimedTenant) | tenant == claimedTenant -> do
          updateTenantDetails newTenant conn
@@ -103,7 +104,7 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
 
 updateTenantDetails :: AC.Tenant -> Connection ->  IO Int64
 updateTenantDetails tenant conn =
-   liftIO $ execute conn [sql|
+   execute conn [sql|
       UPDATE tenant SET
          publicKey = ?,
          sharedSecret = ?,
@@ -112,11 +113,11 @@ updateTenantDetails tenant conn =
       WHERE id = ?
    |] (AC.publicKey tenant, AC.sharedSecret tenant, AC.getURI . AC.baseUrl $ tenant, AC.productType tenant, AC.tenantId tenant)
 
-rawInsertTenantInformation :: Connection -> AC.LifecycleResponse -> IO [Integer]
+rawInsertTenantInformation :: Connection -> AC.LifecycleResponse -> IO Int64
 rawInsertTenantInformation conn lri@AC.LifecycleResponseInstalled{} =
-   fmap join . liftIO $ query conn [sql|
+   execute conn [sql|
       INSERT INTO tenant (key, publicKey, oauthClientId, sharedSecret, baseUrl, productType)
-      VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+      VALUES (?, ?, ?, ?, ?, ?)
    |] (AC.lrClientKey lri, AC.lrPublicKey lri, Nothing :: Maybe T.Text, AC.lrSharedSecret lri, show $ AC.lrBaseUrl lri, AC.lrProductType lri)
 
 getClientKeyForBaseUrl :: Connection -> URI -> IO (Maybe AC.ClientKey)
