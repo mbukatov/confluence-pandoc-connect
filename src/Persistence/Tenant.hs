@@ -73,15 +73,20 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
    let newAndOldKeysEqual = fmap (== newClientKey) oldClientKey
    case (existingTenant, newAndOldKeysEqual, maybeTenant) of
       -- The base url is already being used by somebody else TODO should warn about this in production
-      (_, Just False, _) -> return Nothing
+      (_, Just False, _) -> do
+        putStrLn $ "ERROR baseURI in use: " ++ show newBaseUri
+        return Nothing
       -- We could not find a tenant with the new key. But the base url found a old client key that matched the new one: error, contradiction
       (Nothing, Just True, _)  -> error "This is a contradiction in state, we both could and could not find clientKeys."
       -- We have never seen this baseUrl and nobody is using that key: brand new tenant, insert
-      (Nothing, Nothing, _) -> listToMaybe <$> rawInsertTenantInformation conn lri
+      (Nothing, Nothing, _) -> do
+        putStrLn $ "INFO inserting new tenant: " ++ show newBaseUri
+        listToMaybe <$> rawInsertTenantInformation conn lri
       -- We have seen this tenant before but we may have new information for it. Update it.
       (Just tenant, _, Just claimedTenant) | tenant == claimedTenant -> do
          updateTenantDetails newTenant conn
          wakeTenant newTenant conn
+         putStrLn $ "INFO updating existing tenant: " ++ show newBaseUri
          return . Just . AC.tenantId $ newTenant
          where
             -- After much discussion it seems that the only thing that we want to update is the base
@@ -92,7 +97,9 @@ insertTenantInformation conn maybeTenant lri@AC.LifecycleResponseInstalled{} = d
                , AC.sharedSecret = fromMaybe (AC.sharedSecret tenant) (AC.lrSharedSecret lri)
                }
       -- We have seen this tenant before and the authorisation does not match
-      (Just _, _, _) -> return Nothing
+      (Just _, _, _) -> do
+        putStrLn $ "WARN Bad authorisation for tenant: " ++ show newBaseUri
+        return Nothing
 
 updateTenantDetails :: AC.Tenant -> Connection ->  IO Int64
 updateTenantDetails tenant conn =

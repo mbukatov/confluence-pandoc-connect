@@ -33,7 +33,6 @@ standardHandlers =
 installedHandler :: SS.Handler b App ()
 installedHandler = do
   lr <- AC.getLifecycleResponse
-  SH.logErrorS $ "Got lifecycle response: " ++ show lr
   maybe lifecycleResponseErrorResponse installedHandlerWithTenant lr
 
 installedHandlerWithTenant :: AC.LifecycleResponse -> SS.Handler b App ()
