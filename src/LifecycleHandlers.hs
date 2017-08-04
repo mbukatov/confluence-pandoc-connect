@@ -33,13 +33,18 @@ standardHandlers =
 installedHandler :: SS.Handler b App ()
 installedHandler = do
   lr <- AC.getLifecycleResponse
+  SH.logErrorS $ "Got lifecycle response: " ++ show lr
   maybe lifecycleResponseErrorResponse installedHandlerWithTenant lr
 
 installedHandlerWithTenant :: AC.LifecycleResponse -> SS.Handler b App ()
 installedHandlerWithTenant tenantInfo = do
    validHosts <- fmap AC.connectHostWhitelist AC.getConnect
+   SH.logErrorS $ "Got valid hosts: " ++ show validHosts
    if validHostName validHosts tenantInfo
-      then insertTenantInfo tenantInfo >>= maybe tenantInsertionFailedResponse (const SH.respondNoContent)
+      then do
+        insertionResult <- insertTenantInfo tenantInfo
+        SH.logErrorS $ "Insertion result: " ++ show insertionResult
+        maybe tenantInsertionFailedResponse (const SH.respondNoContent) insertionResult
       else domainNotSupportedResponse
    where
       tenantInsertionFailedResponse = SH.respondWithError SH.unauthorised "Failed to insert the new tenant. Not a valid host or the tenant information was invalid."
