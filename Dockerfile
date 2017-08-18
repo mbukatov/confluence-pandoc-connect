@@ -7,4 +7,5 @@ WORKDIR /build
 
 # Initiate the build environment and build the executable.
 RUN stack setup
+RUN stack build --only-dependencies
 RUN stack build

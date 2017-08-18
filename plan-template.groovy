@@ -46,13 +46,21 @@ echo "image.full.path=docker.atlassian.io/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILEN
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
             description:'Build binary',
             commandOption:'build',
+            save:'Save',
             repository:'cpc-build',
-            registryOption:'hub',
+            registryOption:'custom',
             serviceUrlPattern:'http://localhost:${docker.port}',
-            dockerfileOption:'existing',
             workDir:'/data',
             containerDataVolume_0:'/data',
-            hostDirectory_0:'${bamboo.working.directory}')
+            hostDirectory_0:'${bamboo.working.directory}',
+            dockerfileOption:'inline',
+            dockerfile:'''\
+FROM docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies:latest
+MAINTAINER Avi Knoll
+
+WORKDIR /build
+RUN stack build
+''')
 
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
             description:'Run build image',
