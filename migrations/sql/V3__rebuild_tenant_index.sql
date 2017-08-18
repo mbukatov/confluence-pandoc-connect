@@ -12,7 +12,7 @@ CREATE TABLE tenant (
 );
 
 INSERT INTO tenant (key, publicKey, oauthClientId, sharedSecret, baseUrl, productType, sleep_date)
-SELECT key, publicKey, oauthClientId, sharedSecret, baseUrl, productType, sleep_date FROM tenant_old;
+SELECT key, publicKey, oauthClientId, sharedSecret, baseUrl, productType, sleep_date FROM tenant_v2;
 
 DROP INDEX tenant_idx;
 
