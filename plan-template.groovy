@@ -1,3 +1,69 @@
+plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
+   project(key:'ACA',name:'Atlassian Connect Add-ons')
+
+   repository(name:'Confluence Pandoc Connect Dependencies')
+
+   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-7.12/8.0.1/bin')
+
+   trigger(type:'polling',description:'Polling',
+      strategy:'periodically',
+      frequency:'120') {
+      repository(name:'Confluence Pandoc Connect Dependencies')
+   }
+
+   dependencies() {
+      childPlan(planKey:'ACA-CPCD')
+   }
+
+   notification(type:'All Builds Completed',recipient:'watchers')
+
+   notification(type:'All Builds Completed',
+      recipient:'hipchat',
+      apiKey:'${bamboo.atlassian.hipchat.apikey.password}',
+      notify:'true',
+      room:'2116917')
+
+   stage(name:'Build Docker Image',description:'Create an image with project dependencies built.') {
+      job(key:'CDI',name:'Build and push docker image') {
+         requirement(key:'elastic',condition:'equals',value:'true')
+
+         requirement(key:'os',condition:'equals',value:'Linux')
+
+         task(type:'checkout',description:'Checkout default repository') {
+         }
+
+         task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
+            description:'Build binary',
+            commandOption:'build',
+            save:'Save',
+            repository:'docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies',
+            registryOption:'custom',
+            serviceUrlPattern:'http://localhost:${docker.port}',
+            dockerfileOption:'inline',
+            dockerfile:'''\
+FROM fpco/stack-build:lts-7.12
+MAINTAINER Avi Knoll <aknoll@atlassian.com>
+# Copy our context into the build directory and start working from there
+ADD .   /build
+WORKDIR /build
+
+# Initiate the build environment.
+RUN stack setup
+RUN stack build --only-dependencies
+''')
+
+         task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
+           description:'Push image',
+           serviceTimeout:'120',
+           commandOption:'push',
+           save:'Save',
+           registryOption:'custom',
+           serviceUrlPattern:'http://localhost:${docker.port}',
+           pushRepository:'docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies')
+      }
+   }
+}
+
 plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
    project(key:'ACA',name:'Atlassian Connect Add-ons')
 
