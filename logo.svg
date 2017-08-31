@@ -7,7 +7,6 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="200mm"
@@ -15,7 +14,7 @@
    viewBox="0 0 708.66142 708.66141"
    id="svg2"
    version="1.1"
-   inkscape:version="0.91 r13725"
+   inkscape:version="0.92.2 5c3e80d, 2017-08-06"
    sodipodi:docname="logo.svg">
   <defs
      id="defs4" />
@@ -26,16 +25,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="253.57143"
-     inkscape:cy="348.34251"
+     inkscape:zoom="0.35"
+     inkscape:cx="3.2395958"
+     inkscape:cy="536.01217"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1246"
-     inkscape:window-height="1078"
-     inkscape:window-x="3200"
-     inkscape:window-y="0"
+     inkscape:window-height="1058"
+     inkscape:window-x="1920"
+     inkscape:window-y="20"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -45,7 +44,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -74,58 +73,43 @@
        height="731.42853"
        x="-12.857142"
        y="333.7908" />
-    <image
-       y="434.19482"
-       x="64.187859"
-       id="image3417"
-       xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAAwCAMAAAAl8WZyAAAAMFBMVEX/////////////////////
-//////////////////////////////////////////9Or7hAAAAAEHRSTlMAESIzRFVmd4iZqrvM
-3e7/dpUBFQAABApJREFUeNrtme22nCoMQANECETI+7/tPSpDcHBqndPbszrL/aeKFLMJH3IGbm5u
-/j0smksPLX4B72ICi0hhMgCevkD4m0SR5C0c4MIsQtCBcZbKnMjCZXyRSgDcLuBvQlvsOMSVZQE7
-+Vl2MFwFpYE/IjvJSl7FeWVaxptsWLUX+a5s11vuR2RBNhbDuF36lnCZNa9FnohwEScK/Ixsqqk1
-ALYl2bap9YDlGYKL+NomoscfkkWNfcsnqloxULFSmTkxc9kGwDWoG/0/JAvcDWSu0kPyfFW1UHEI
-/56sTqXiAMwcm5kmVvUtHGDwCwfHWPM9WXdlXzduDOwpZFLb/Q4xPdfJBzI01/+d/KMuM8d1o+ay
-PCDza1nkhcVouElFVtjr07QkxW9bfnIaB9fBF6dakLeCTL2vmWVjNrt1N70agkN5JTtd3zHkVj7X
-dVDJvSzplNndGB7apvXhVBvTBJm++bKUBOnwoLiitnqTzblslD1ulR0Iw2p+KltzoBRbnyq6Oe6q
-cl9xtPXSbF3RPjuVDaLoLJeB+brs2JFRHXrcUExb40NcQ9S56AfduWw53Hxl5A1ZOzRiD2XDEAe1
-TCthGI9D4k9kJ9mIRG01OJbF63M21EHhEVMN6VCW2n6SA+IUIttHRxVCDOUg8ji4nsuS1m2ps022
-xKnFgUMbp7Ks469ek8rO3nalQavusuC7KQqjrbqeyHZ+efcCfMjWDeebsrF/e7twu6pjcNQJGr0+
-tg1wQXYr1Byq37dkcysdZAkuyIJe97Aunm/Iwh+WlYHLssooqxub+3xZtc3mw2WT72zpQ2X1ue++
-FfGTZc1i6fQ7a74sa/4X2YiKuSqLiq5CjmKun8O6bcfgBlkxr2XxD8vyOJ+uysLAFMvuCDFLI8fm
-G/RjfGjT9jfuDdnWtPEse9n592Xzi8AUytJRahBK9vs/ZzAh4kSUmF37fJ0ALMkGvCtbiFgeUPvG
-CWarHZJ/KYs1E2tVRPMo4M3W+RiXf1RVW2HZwdvbtKZWtjKQ3pIdoP7YyTpdjmXNcMJpuWIuW5K3
-tbdEjyBd3v1DEkMq9UTfvXvs/R58QxYPZU0R5ezoexrYtExPxm6Qzv2yWtqvIPH4EMgHARFclX15
-LB67172UteUpMDsG1iY1St8I92uZbeHRIDvMgwhvyZIoaa6RjC/EY9nh94pZC7pg+RGS2x12Yn88
-DLr8u7hrcq1tSMt4gpXcf18XvQmtQ/SdZdePHCx4jQT5+X1B49Sb5zjSWtAHm8mto5AM/AKb6pyt
-OB9WJtQyDBSZyFt4Hxu+wIPyiYiZqD0bGGLDR7gGiRJHIrTtL5CFXkbpoo6ZTwBj/XV2JGTtiU/B
-+FQOs5dynODm5ubm5ubm5pT/AGmqzdoC5N1sAAAAAElFTkSuQmCC
-"
-       preserveAspectRatio="none"
-       height="118.02422"
-       width="580.28571" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:62.63389969px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="269.48593"
-       y="761.28259"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:679.22070312px;line-height:0%;font-family:'Twitter Color Emoji';-inkscape-font-specification:'Twitter Color Emoji, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:56.60213852px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="21.696253"
+       y="938.24982"
        id="text4229"
-       sodipodi:linespacing="125%"><tspan
+       transform="scale(0.98114291,1.0192195)"><tspan
          sodipodi:role="line"
          id="tspan4231"
-         x="269.48593"
-         y="761.28259"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:281.85253906px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono'">❤</tspan></text>
+         x="21.696253"
+         y="938.24982"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:679.22070312px;line-height:1.25;font-family:'Twitter Color Emoji';-inkscape-font-specification:'Twitter Color Emoji, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:56.60213852px">❤</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:46.57303238px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="103.92104"
-       y="970.9455"
-       id="text4235"
-       sodipodi:linespacing="125%"><tspan
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="354.43304"
+       y="660.27051"
+       id="text4235"><tspan
          sodipodi:role="line"
          id="tspan4237"
-         x="103.92104"
-         y="970.9455"
-         style="font-size:209.5786438px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-opacity:1">🖺🖹🖻</tspan></text>
-  </g>
+         x="354.43304"
+         y="660.27051"
+         style="font-size:209.5786438px;line-height:1;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-opacity:1">🖺   🖹</tspan><tspan
+         sodipodi:role="line"
+         x="354.43304"
+         y="869.84912"
+         style="font-size:209.5786438px;line-height:1;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-opacity:1"
+         id="tspan3714">🖻</tspan></text>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3716"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion3718"><rect
+           id="rect3720"
+           width="1065.7142"
+           height="1031.4286"
+           x="-277.14285"
+           y="-204.09448" /></flowRegion><flowPara
+         id="flowPara3722"></flowPara></flowRoot>  </g>
 </svg>
