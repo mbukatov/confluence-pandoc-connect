@@ -43,7 +43,7 @@ You'll need the following installed:
     stack build && \
     CONNECT_BASE_URL="${NGROK_URL}" \
     PG_CONFLUENCE_PANDOC_CONNECT_URL="postgres://confluence_pandoc_connect@localhost:5432/confluence_pandoc_connect" \
-    stack exec confluence-pandoc-connect -- --port 8001 --error-log=- --access-log=-
+    stack exec confluence-pandoc-connect -- --port 8001 --error-log=-
 
 
 # Publishing a new version

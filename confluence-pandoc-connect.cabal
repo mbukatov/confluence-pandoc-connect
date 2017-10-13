@@ -49,6 +49,7 @@ Executable confluence-pandoc-connect
     , snap-core
     , snap-server
     , snap-loader-static
+    , snap-json-logging
     , snaplet-postgresql-simple
     , text
     , time

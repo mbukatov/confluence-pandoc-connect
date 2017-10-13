@@ -14,20 +14,23 @@ import           Confluence
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
-import qualified Data.ByteString               as BS
-import qualified Data.ByteString.Char8         as BC
+import qualified Data.ByteString                 as BS
+import qualified Data.ByteString.Char8           as BC
 import           Data.Maybe
 import           Healthcheck
 import           LifecycleHandlers
-import qualified MicrosZone                    as MZ
+import qualified MicrosZone                      as MZ
 import           MigrationHandler
 import           Prelude
 import           Snap.AtlassianConnect
 import           Snap.Core
+import qualified Snap.Logging.Json               as SLJ
+import           Snap.Logging.Json.AccessLogging
 import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Snaplet.PostgresqlSimple
-import           System.Environment            (getEnv)
+import           System.Environment              (getEnv)
+import           System.IO                       (stdout)
 import           WithToken
 
 handleCreateRequest :: AppHandler ()
@@ -37,7 +40,7 @@ handleCreateRequest =
 
 -- | The application's routes.
 routes, applicationRoutes :: [(BS.ByteString, AppHandler ())]
-routes = applicationRoutes ++ lifecycleRoutes
+routes = map (\(b, a) -> (b, a >> with logging logAccess)) $ applicationRoutes ++ lifecycleRoutes
 applicationRoutes =
   [ ("/rest/heartbeat", heartbeatRequest)
   , ("/rest/migration", migrationRequest)
@@ -59,6 +62,7 @@ app = makeSnaplet "confluence-pandoc-connect" "CPC connect application" Nothing 
       connectFeatures = ConnectFeatures { webItemDisplayEnabled = zone == Just MZ.Dev || isNothing zone }
       descriptorWithZone = MZ.modifyDescriptorUsingZone zone $ addonDescriptor connectFeatures
     ac <- nestSnaplet "connect" connect $ initConnectSnaplet descriptorWithZone
+    logger <- nestSnaplet "logging" logging $ SLJ.initSnaplet stdout
     addRoutes routes
-    return $ App h db' ac
+    return $ App h db' ac logger
 
