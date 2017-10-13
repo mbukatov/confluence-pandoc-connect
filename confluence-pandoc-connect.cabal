@@ -38,6 +38,7 @@ Executable confluence-pandoc-connect
     , lens
     , lens-aeson
     , map-syntax
+    , MissingH
     , mtl
     , network-uri
     , pandoc

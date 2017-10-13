@@ -35,7 +35,6 @@ import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest     as HR
 import           Snap.Core                             as SC
-import           Snap.Snaplet
 import           Snap.Snaplet.Heist
 import           Snap.Util.FileUploads
 import qualified SnapHelpers                           as SH
@@ -161,7 +160,7 @@ uploadMedia (PageId pageId) mediaBag (tenant, _) = do
     [] -> return $ Right ()
     _ -> do
       body <- liftIO $ renderParts boundary parts'
-      resp <- with connect $ hostPostRequest tenant (BC.pack attachmentUrl) []
+      resp <- hostPostRequest tenant (BC.pack attachmentUrl) []
                         $ HR.addHeader (hContentType, "multipart/form-data; boundary=" <> boundary) <>
                           HR.addHeader (CI.mk "X-Atlassian-Token", "nocheck") <>
                           Endo (\r -> r { requestBody = body })
@@ -186,7 +185,7 @@ createPage filename fileContent spaceKey maybePageId twu@(tenant, _) = do
                       , pageBody = Body fileContent
                       , pageAncestors = maybeToList maybePageId
                       }
-  with connect $ hostPostRequest tenant "/rest/api/content" []
+  hostPostRequest tenant "/rest/api/content" []
                        $ HR.setBody (LBS.toStrict requestBody_) <>
                          HR.addHeader (hContentType, "application/json")
 
@@ -218,7 +217,7 @@ pageExists name (ConfluenceTypes.Space (Key spaceKey)) (tenant, _) = do
   where
     getResults :: A.Value -> Maybe A.Value
     getResults o = o ^? A.key "results" . A.nth 0
-    contentReq = with connect $ hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", encodeParam spaceKey, "&title=", encodeParam name]) [] mempty
+    contentReq = hostGetRequest tenant (BS.concat ["/rest/api/content?", "spaceKey=", encodeParam spaceKey, "&title=", encodeParam name]) [] mempty
     searchIsEmpty :: A.Value -> Bool
     searchIsEmpty val = val ^? A.key "size" . A._Number == Just 0
     encodeParam = E.encodeUtf8 . T.pack . (escapeURIString isUnescapedInURIComponent) . T.unpack

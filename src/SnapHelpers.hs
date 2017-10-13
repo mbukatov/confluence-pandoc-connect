@@ -14,7 +14,6 @@ import           Data.Time.Clock.POSIX  (posixSecondsToUTCTime)
 import           GHC.Generics
 import qualified Snap.Core              as SC
 import           Snap.Logging.Json
-import           Snap.Logging.Json.Data
 import qualified Snap.Snaplet           as SS
 
 respondWith :: SC.MonadSnap m => Int -> m ()

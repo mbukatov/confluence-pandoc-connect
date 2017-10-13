@@ -12,6 +12,7 @@ import           Data.Aeson                        as A
 import qualified Data.Aeson.Lens                   as A
 import qualified Data.ByteString                   as BS
 import qualified Data.ByteString.Lazy              as LBS
+import           Data.Either.Utils
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text                         as T
@@ -60,9 +61,10 @@ instance ToJSON GetUserByKey where
     ]
 
 data ProductErrorLog = ProductErrorLog
-  { requestType  :: T.Text
-  , productUri   :: T.Text
-  , productError :: HR.ProductErrorResponse
+  { requestType         :: T.Text
+  , productUri          :: T.Text
+  , productResponseCode :: Int
+  , productError        :: Either T.Text A.Object
   } deriving (Show, Generic)
 
 instance ToJSON HR.ProductErrorResponse
@@ -111,11 +113,7 @@ hostPostRequest t uri auth req = do
   logProductError r
   return r
   where
-    logProductError (Left err) = with logging . logJson $ ProductErrorLog
-      { requestType = "POST"
-      , productUri = TE.decodeUtf8 uri
-      , productError =  err
-      }
+    logProductError (Left err) = with logging . logJson $ encodeProductErrorLog "POST" uri err
     logProductError _ = return ()
 
 hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b App (Either HR.ProductErrorResponse a)
@@ -124,9 +122,13 @@ hostGetRequest t uri auth req = do
   logProductError r
   return r
   where
-    logProductError (Left err) = with logging . logJson $ ProductErrorLog
-      { requestType = "GET"
-      , productUri = TE.decodeUtf8 uri
-      , productError = err
-      }
+    logProductError (Left err) = with logging . logJson $ encodeProductErrorLog "GET" uri err
     logProductError _ = return ()
+
+encodeProductErrorLog :: T.Text -> BS.ByteString -> HR.ProductErrorResponse -> ProductErrorLog
+encodeProductErrorLog rt pu per = ProductErrorLog
+      { requestType = rt
+      , productUri = TE.decodeUtf8 pu
+      , productResponseCode = HR.perCode per
+      , productError = maybeToEither (HR.perMessage per) (A.decodeStrict . TE.encodeUtf8 $ HR.perMessage per)
+      }
