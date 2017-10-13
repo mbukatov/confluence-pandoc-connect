@@ -172,7 +172,7 @@ COPY static /service/static
 # Copy and run binary
 ADD ./confluence-pandoc-connect /usr/bin/confluence-pandoc-connect
 WORKDIR /service
-CMD ["confluence-pandoc-connect", "--access-log=-", "--error-log=-", "--port=8080"]
+CMD ["confluence-pandoc-connect", "--error-log=-", "--port=8080"]
 ''')
 
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',

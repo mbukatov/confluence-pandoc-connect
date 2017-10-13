@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module JsonRpc where
@@ -10,17 +11,20 @@ import           Control.Monad
 import           Data.Aeson                        as A
 import qualified Data.Aeson.Lens                   as A
 import qualified Data.ByteString                   as BS
-import qualified Data.ByteString.Char8             as BC
 import qualified Data.ByteString.Lazy              as LBS
+import           Data.Either.Utils
 import           Data.Maybe
 import           Data.Monoid
+import qualified Data.Text                         as T
+import qualified Data.Text.Encoding                as TE
+import           GHC.Generics
 import           Key
 import           Network.HTTP.Client               (Request)
 import           Network.HTTP.Types.Header
 import           Prelude
 import           Snap.AtlassianConnect
 import qualified Snap.AtlassianConnect.HostRequest as HR
-import           Snap.Core                         as SC
+import           Snap.Logging.Json
 import           Snap.Snaplet
 
 newtype RpcSpace = RpcSpace Space
@@ -56,12 +60,22 @@ instance ToJSON GetUserByKey where
     , "id" .= String "2" -- value doesn't matter to us
     ]
 
-userCanCreatePage :: Space -> TenantWithUser -> AppHandler Bool
+data ProductErrorLog = ProductErrorLog
+  { requestType         :: T.Text
+  , productUri          :: T.Text
+  , productResponseCode :: Int
+  , productError        :: Either T.Text A.Object
+  } deriving (Show, Generic)
+
+instance ToJSON HR.ProductErrorResponse
+instance ToJSON ProductErrorLog
+
+userCanCreatePage :: Space -> TenantWithUser -> Handler b App Bool
 userCanCreatePage space twu@(tenant, maybeUser) = do
   _ <- maybe (fail "No user found") return maybeUser
   username <- getUsername twu
   let body = LBS.toStrict . encode $ getPermissionsForUser space username
-  resp <- with connect $ hostPostRequest tenant "/rpc/json-rpc/confluenceservice-v2" []
+  resp <- hostPostRequest tenant "/rpc/json-rpc/confluenceservice-v2" []
                            $ HR.addHeader (hContentType, "application/json") <>
                              HR.setBody body
   either (\_ -> fail "Couldn't get user permissions from the application")
@@ -76,11 +90,11 @@ responseHasModifyPermission o =
     hasModify ps = "modify" `elem` ps
   in maybe False (hasModify . perms) result
 
-getUsername :: TenantWithUser -> AppHandler Username
+getUsername :: TenantWithUser -> Handler b App Username
 getUsername (tenant, maybeUser) = do
   user <- maybe (fail "No user found") return maybeUser
   let body = LBS.toStrict . encode $ GetUserByKey user
-  resp <- with connect $ hostPostRequest tenant "/rpc/json-rpc/confluenceservice-v2" []
+  resp <- hostPostRequest tenant "/rpc/json-rpc/confluenceservice-v2" []
                            $ HR.addHeader (hContentType, "application/json") <>
                              HR.setBody body
   either (\_ -> fail "Couldn't get username from the application")
@@ -93,14 +107,28 @@ usernameFromResponse o = let
   name = foldMap (\r -> r ^? A.key "name" . A._String) result
   in Username <$> name
 
-hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
-hostPostRequest t uri auth req = HR.hostPostRequest t Nothing uri auth req >>= (\r -> logProductError r >> return r)
+hostPostRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b App (Either HR.ProductErrorResponse a)
+hostPostRequest t uri auth req = do
+  r <- with connect $ HR.hostPostRequest t Nothing uri auth req
+  logProductError r
+  return r
   where
-    logProductError (Left err) = logError $ BC.concat ["POST request to ", uri, " failed: ", BC.pack $ show err]
+    logProductError (Left err) = with logging . logJson $ encodeProductErrorLog "POST" uri err
     logProductError _ = return ()
 
-hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b Connect (Either HR.ProductErrorResponse a)
-hostGetRequest t uri auth req = HR.hostGetRequest t Nothing uri auth req >>= (\r -> logProductError r >> return r)
+hostGetRequest :: A.FromJSON a => Tenant -> BS.ByteString -> [(BS.ByteString, Maybe BS.ByteString)] -> Endo Network.HTTP.Client.Request -> Handler b App (Either HR.ProductErrorResponse a)
+hostGetRequest t uri auth req = do
+  r <- with connect $ HR.hostGetRequest t Nothing uri auth req
+  logProductError r
+  return r
   where
-    logProductError (Left err) = logError $ BC.concat ["GET request to ", uri, " failed: ", BC.pack $ show err]
+    logProductError (Left err) = with logging . logJson $ encodeProductErrorLog "GET" uri err
     logProductError _ = return ()
+
+encodeProductErrorLog :: T.Text -> BS.ByteString -> HR.ProductErrorResponse -> ProductErrorLog
+encodeProductErrorLog rt pu per = ProductErrorLog
+      { requestType = rt
+      , productUri = TE.decodeUtf8 pu
+      , productResponseCode = HR.perCode per
+      , productError = maybeToEither (HR.perMessage per) (A.decodeStrict . TE.encodeUtf8 $ HR.perMessage per)
+      }
