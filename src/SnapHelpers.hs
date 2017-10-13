@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 module SnapHelpers where
 
+import           Application
 import qualified Control.Applicative    as CA
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson
@@ -12,6 +13,8 @@ import           Data.Time.Clock        (UTCTime, getCurrentTime)
 import           Data.Time.Clock.POSIX  (posixSecondsToUTCTime)
 import           GHC.Generics
 import qualified Snap.Core              as SC
+import           Snap.Logging.Json
+import           Snap.Logging.Json.Data
 import qualified Snap.Snaplet           as SS
 
 respondWith :: SC.MonadSnap m => Int -> m ()
@@ -54,9 +57,20 @@ data ErrorResponse = ErrorResponse
 
 instance ToJSON ErrorResponse
 
-respondWithError :: SC.MonadSnap m => Int -> String -> m ()
+data ErrorLog =
+  ErrorLog
+    { message :: String
+    }
+  | ErrorLogWithStatus
+    { status  :: Int
+    , message :: String
+    } deriving (Show, Generic)
+
+instance ToJSON ErrorLog
+
+respondWithError :: Int -> String -> SS.Handler b App ()
 respondWithError errorCode response = do
-  logErrorS $ "status: " ++ show errorCode ++ ", message: " ++ response
+  SS.with logging . logJson $ ErrorLogWithStatus errorCode response
   respondWithErrors errorCode [response]
 
 respondWithErrors :: SC.MonadSnap m => Int -> [String] -> m ()
@@ -66,14 +80,14 @@ respondWithErrors errorCode responses = do
   where
     errorResponse = ErrorResponse responses
 
-respondPlainWithError :: SC.MonadSnap m => Int -> String -> m ()
+respondPlainWithError :: Int -> String -> SS.Handler b App ()
 respondPlainWithError errorCode response = do
-  logErrorS $ "status: " ++ show errorCode ++ ", message: " ++ response
+  SS.with logging . logJson $ ErrorLogWithStatus errorCode response
   SC.writeBS . BSC.pack $ response
   respondWith errorCode
 
-logErrorS :: SC.MonadSnap m => String -> m ()
-logErrorS = SC.logError . BSC.pack
+logErrorS :: String -> SS.Handler b App ()
+logErrorS = SS.with logging . logJson . ErrorLog
 
 getTimestampOrCurrentTime :: SS.Handler a b UTCTime
 getTimestampOrCurrentTime =
