@@ -6,7 +6,7 @@ packages:
     commit: 44ad4404b2a52a5821976f5445c928adce779bb8
   extra-dep: true
 - location:
-    git: git@bitbucket.org:ajknoll_atlassian/snap-json-logging.git
+    git: git@bitbucket.org:atlassianlabs/snap-json-logging.git
     commit: c253db9153c939fab4a90d453be7039886bec890
   extra-dep: true
 extra-deps:
