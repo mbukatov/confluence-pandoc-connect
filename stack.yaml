@@ -5,13 +5,14 @@ packages:
     git: https://ajknoll_atlassian@bitbucket.org/ajknoll_atlassian/atlassian-connect-core.git
     commit: 44ad4404b2a52a5821976f5445c928adce779bb8
   extra-dep: true
-- location:
-    git: git@bitbucket.org:atlassianlabs/snap-json-logging.git
-    commit: c253db9153c939fab4a90d453be7039886bec890
+- location: vendor/snap-json-logging
   extra-dep: true
 extra-deps:
+- aeson-0.11.3.0
 - atlassian-connect-descriptor-0.4.5.0
 - heist-1.0.1.0
+- http-client-0.4.31.2
+- http-client-tls-0.2.4.1
 - http-types-0.8.6
 - map-syntax-0.2.0.1
 - network-api-support-0.2.2
@@ -19,4 +20,5 @@ extra-deps:
 - snap-loader-static-1.0.0.0
 - snaplet-postgresql-simple-1.0.1.0
 - time-units-1.0.0
-resolver: lts-7.24
+- xmlhtml-0.2.5.1
+resolver: lts-9.12

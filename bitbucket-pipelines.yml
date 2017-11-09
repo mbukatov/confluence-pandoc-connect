@@ -1,4 +1,4 @@
-image: fpco/stack-build:lts-7
+image: fpco/stack-build:lts-9
 
 pipelines:
   default:

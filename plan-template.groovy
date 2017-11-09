@@ -3,7 +3,7 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
 
    repository(name:'Confluence Pandoc Connect Dependencies')
 
-   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-7.24/8.0.1/bin')
+   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-9.12/8.0.2/bin')
 
    trigger(type:'polling',description:'Polling',
       strategy:'periodically',
@@ -32,6 +32,13 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
          task(type:'checkout',description:'Checkout default repository') {
          }
 
+         task(type:'script',description:'Checkout submodules',scriptBody:'''\
+#!/bin/sh
+git submodule init
+git submodule update\
+''',
+         interpreter:'RUN_AS_EXECUTABLE')
+
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
             description:'Build binary',
             commandOption:'build',
@@ -41,7 +48,7 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
             serviceUrlPattern:'http://localhost:${docker.port}',
             dockerfileOption:'inline',
             dockerfile:'''\
-FROM fpco/stack-build:lts-7
+FROM fpco/stack-build:lts-9
 MAINTAINER Avi Knoll <aknoll@atlassian.com>
 # Copy our context into the build directory and start working from there
 ADD .   /build
@@ -69,7 +76,7 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
    repository(name:'Confluence Pandoc Connect')
 
-   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-7.24/8.0.1/bin')
+   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-9.12/8.0.2/bin')
 
    trigger(type:'polling',description:'Polling',
       strategy:'periodically',
@@ -95,6 +102,13 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
          task(type:'checkout',description:'Checkout default repository') {
          }
+
+         task(type:'script',description:'Checkout submodules',scriptBody:'''\
+#!/bin/sh
+git submodule init
+git submodule update\
+''',
+         interpreter:'RUN_AS_EXECUTABLE')
 
          task(type:'script',description:'Create variables file',
             scriptBody:'''
