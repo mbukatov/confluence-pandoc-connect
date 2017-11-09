@@ -25,8 +25,6 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
 
    stage(name:'Build Docker Image',description:'Create an image with project dependencies built.') {
       job(key:'CDI',name:'Build and push docker image') {
-         requirement(key:'elastic',condition:'equals',value:'true')
-
          requirement(key:'os',condition:'equals',value:'Linux')
 
          task(type:'checkout',description:'Checkout default repository') {
@@ -94,8 +92,6 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
    stage(name:'Build Docker Image',description:'Create a production ready docker image.') {
       job(key:'CDI',name:'Build and push docker image') {
-         requirement(key:'elastic',condition:'equals',value:'true')
-
          requirement(key:'os',condition:'equals',value:'Linux')
 
          artifactDefinition(name:'tag_variables',pattern:'*_variables',shared:'true')
