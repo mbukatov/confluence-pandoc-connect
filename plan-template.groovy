@@ -55,6 +55,7 @@ WORKDIR /build
 # Initiate the build environment.
 RUN stack setup
 RUN stack build --only-dependencies
+RUN mkdir /build-temp; mv .stack-work /build-temp/; rm -rf /build/* /build/.*; mv /build-temp/.stack-work /build/
 ''')
 
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
@@ -134,7 +135,7 @@ echo "image.full.path=docker.atlassian.io/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILEN
 FROM docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies:latest
 MAINTAINER Avi Knoll
 
-WORKDIR /build
+ADD . /build
 RUN stack build
 ''')
 
