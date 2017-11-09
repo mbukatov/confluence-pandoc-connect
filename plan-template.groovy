@@ -3,7 +3,7 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
 
    repository(name:'Confluence Pandoc Connect Dependencies')
 
-   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-7.24/8.0.1/bin')
+   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-9.12/8.0.2/bin')
 
    trigger(type:'polling',description:'Polling',
       strategy:'periodically',
@@ -25,12 +25,17 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
 
    stage(name:'Build Docker Image',description:'Create an image with project dependencies built.') {
       job(key:'CDI',name:'Build and push docker image') {
-         requirement(key:'elastic',condition:'equals',value:'true')
-
          requirement(key:'os',condition:'equals',value:'Linux')
 
          task(type:'checkout',description:'Checkout default repository') {
          }
+
+         task(type:'script',description:'Checkout submodules',scriptBody:'''\
+#!/bin/sh
+git submodule init
+git submodule update\
+''',
+         interpreter:'RUN_AS_EXECUTABLE')
 
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
             description:'Build binary',
@@ -41,7 +46,7 @@ plan(key:'CPCE',name:'Confluence Pandoc Connect dependencies') {
             serviceUrlPattern:'http://localhost:${docker.port}',
             dockerfileOption:'inline',
             dockerfile:'''\
-FROM fpco/stack-build:lts-7
+FROM fpco/stack-build:lts-9
 MAINTAINER Avi Knoll <aknoll@atlassian.com>
 # Copy our context into the build directory and start working from there
 ADD .   /build
@@ -50,6 +55,7 @@ WORKDIR /build
 # Initiate the build environment.
 RUN stack setup
 RUN stack build --only-dependencies
+RUN mkdir /build-temp; mv .stack-work /build-temp/; rm -rf /build/* /build/.*; mv /build-temp/.stack-work /build/
 ''')
 
          task(type:'custom',createTaskKey:'com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli',
@@ -69,7 +75,7 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
    repository(name:'Confluence Pandoc Connect')
 
-   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-7.24/8.0.1/bin')
+   variable(key:'stack.binary.path',value:'.stack-work/install/x86_64-linux/lts-9.12/8.0.2/bin')
 
    trigger(type:'polling',description:'Polling',
       strategy:'periodically',
@@ -87,14 +93,19 @@ plan(key:'CPCD',name:'Confluence Pandoc Connect (docker)') {
 
    stage(name:'Build Docker Image',description:'Create a production ready docker image.') {
       job(key:'CDI',name:'Build and push docker image') {
-         requirement(key:'elastic',condition:'equals',value:'true')
-
          requirement(key:'os',condition:'equals',value:'Linux')
 
          artifactDefinition(name:'tag_variables',pattern:'*_variables',shared:'true')
 
          task(type:'checkout',description:'Checkout default repository') {
          }
+
+         task(type:'script',description:'Checkout submodules',scriptBody:'''\
+#!/bin/sh
+git submodule init
+git submodule update\
+''',
+         interpreter:'RUN_AS_EXECUTABLE')
 
          task(type:'script',description:'Create variables file',
             scriptBody:'''
@@ -124,7 +135,7 @@ echo "image.full.path=docker.atlassian.io/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILEN
 FROM docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies:latest
 MAINTAINER Avi Knoll
 
-WORKDIR /build
+ADD . /build
 RUN stack build
 ''')
 

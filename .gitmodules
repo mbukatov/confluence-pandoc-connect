@@ -1,0 +1,3 @@
+[submodule "vendor/snap-json-logging"]
+	path = vendor/snap-json-logging
+	url = git@bitbucket.org:atlassianlabs/snap-json-logging.git
