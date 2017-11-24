@@ -41,7 +41,7 @@ git submodule update\
             description:'Build binary',
             commandOption:'build',
             save:'Save',
-            repository:'docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies',
+            repository:'docker.atl-paas.net/atlassian/confluence-pandoc-connect-dependencies',
             registryOption:'custom',
             serviceUrlPattern:'http://localhost:${docker.port}',
             dockerfileOption:'inline',
@@ -65,7 +65,7 @@ RUN mkdir /build-temp; mv .stack-work /build-temp/; rm -rf /build/* /build/.*; m
            save:'Save',
            registryOption:'custom',
            serviceUrlPattern:'http://localhost:${docker.port}',
-           pushRepository:'docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies')
+           pushRepository:'docker.atl-paas.net/atlassian/confluence-pandoc-connect-dependencies')
       }
    }
 }
@@ -114,7 +114,7 @@ IMAGE_TAG=$(git describe --always)
 IMAGE_NAME="atlassian/confluence-pandoc-connect"
 echo "image.tag=${IMAGE_TAG}" >> ${FILENAME}
 echo "image.name=${IMAGE_NAME}" >> ${FILENAME}
-echo "image.full.path=docker.atlassian.io/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILENAME}
+echo "image.full.path=docker.atl-paas.net/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILENAME}
 ''')
 
          task(type:'injectBambooVariables',description:'Inject variables',
@@ -132,7 +132,7 @@ echo "image.full.path=docker.atlassian.io/${IMAGE_NAME}:${IMAGE_TAG}" >> ${FILEN
             hostDirectory_0:'${bamboo.working.directory}',
             dockerfileOption:'inline',
             dockerfile:'''\
-FROM docker.atlassian.io/atlassian/confluence-pandoc-connect-dependencies:latest
+FROM docker.atl-paas.net/atlassian/confluence-pandoc-connect-dependencies:latest
 MAINTAINER Avi Knoll
 
 ADD . /build
@@ -156,7 +156,7 @@ RUN stack build
             description:'Build run image',
             serviceTimeout:'120',
             commandOption:'build',
-            repository:'docker.atlassian.io/atlassian/confluence-pandoc-connect:${bamboo.inject.image.tag}',
+            repository:'docker.atl-paas.net/atlassian/confluence-pandoc-connect:${bamboo.inject.image.tag}',
             registryOption:'hub',
             serviceUrlPattern:'http://localhost:${docker.port}',
             workDir:'/data',
@@ -192,7 +192,7 @@ CMD ["confluence-pandoc-connect", "--error-log=-", "--port=8080"]
             serviceUrlPattern:'http://localhost:${docker.port}',
             workDir:'/data',containerDataVolume_0:'/data',
             dockerfileOption:'inline',hostDirectory_0:'${bamboo.working.directory}',
-            pushRepository:'docker.atlassian.io/atlassian/confluence-pandoc-connect:${bamboo.inject.image.tag}')
+            pushRepository:'docker.atl-paas.net/atlassian/confluence-pandoc-connect:${bamboo.inject.image.tag}')
 
       }
    }
