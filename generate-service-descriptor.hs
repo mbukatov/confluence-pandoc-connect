@@ -12,7 +12,7 @@ serviceDescriptor version = "{\n\
 \   }],\n\
 \   \"links\": {\n\
 \      \"binary\": {\n\
-\         \"name\": \"docker.atlassian.io/atlassian/confluence-pandoc-connect\",\n\
+\         \"name\": \"docker.atl-paas.net/atlassian/confluence-pandoc-connect\",\n\
 \         \"type\": \"docker\",\n\
 \         \"tag\": \"" ++ version ++ "\"\n\
 \      },\n\
