@@ -5,7 +5,10 @@ serviceDescriptor version = "{\n\
 \   \"description\": \"Import files and stuff\",\n\
 \   \"name\": \"Confluence universal importer\",\n\
 \   \"organization\": \"CISO-Identity\",\n\
-\   \"externalAccess\": true,\n\
+\   \"network\": {\n\
+\      \"ingress\": \"external\",\n\
+\      \"egress\": \"internet-only\"\n\
+\   },\n\
 \   \"resources\": [{\n\
 \      \"type\": \"postgres-db\",\n\
 \      \"name\": \"confluence-pandoc-connect\"\n\
